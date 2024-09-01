@@ -25,7 +25,7 @@ namespace VehiclesControl.API.Controllers
 
         #endregion
 
-        [Authorize]
+        
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<List<CarResponse>>), StatusCodes.Status200OK)]
         public ApiResponse<List<CarResponse>> CarList()
@@ -33,7 +33,7 @@ namespace VehiclesControl.API.Controllers
             return _carService.CarList();
         }
 
-        [Authorize]
+    
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<CarResponse>), StatusCodes.Status200OK)]
         public ApiResponse<CarResponse> GetCar(long id)
@@ -41,7 +41,7 @@ namespace VehiclesControl.API.Controllers
             return _carService.GetCar(id);
         }
 
-        [Authorize]
+    
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
@@ -51,7 +51,7 @@ namespace VehiclesControl.API.Controllers
             return response;
         }
 
-        [Authorize]
+      
         [HttpPatch("{id}/HeadlightsOn")]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status200OK)]
         public ApiResponse<long> CarHeadlightsOn(long id)
@@ -59,7 +59,7 @@ namespace VehiclesControl.API.Controllers
             return _carService.CarByHeadlightsOn(id);
         }
 
-        [Authorize]
+      
         [HttpPatch("{id}/HeadlightsOff")]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status200OK)]
         public ApiResponse<long> CarHeadlightsOff(long id)

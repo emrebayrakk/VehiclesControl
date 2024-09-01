@@ -1,11 +1,15 @@
 ﻿
+using AutoMapper;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VehiclesControl.Application.Boat;
 using VehiclesControl.Application.Bus;
 using VehiclesControl.Application.Car;
 using VehiclesControl.Application.User;
+using VehiclesControl.Data.Context;
 using VehiclesControl.Data.Repositories;
+using VehiclesControl.Data.Repositories.CachedRepositories;
 using VehiclesControl.Domain.Interfaces;
 
 namespace VehiclesControl.Infrastructure.Configurations
@@ -14,10 +18,24 @@ namespace VehiclesControl.Infrastructure.Configurations
     {
         public void Install(IServiceCollection services, IConfiguration configuration)
         {
+            services.AddMemoryCache();
+
             services.AddScoped<IUserRepo, UserRepo>();
             services.AddScoped<IUserService, UserService>();
+
+            //decorator configuration 1
+            //services.AddScoped<ICarRepo>(provider => {
+            //    var context = provider.GetService<VehiclesControlContext>();
+            //    var mapper = provider.GetService<IMapper>();
+            //    var cache = provider.GetService<IMemoryCache>();
+
+            //    return new CachedCarRepo(cache,
+            //        new CarRepo(context, mapper));
+            //});
             
-            services.AddScoped<ICarRepo, CarRepo>();
+            services.AddScoped<ICarRepo, CarRepo>(); //decorator configuration 2 with Scrutor
+            services.Decorate<ICarRepo, CachedCarRepo>();
+
             services.AddScoped<ICarService, CarService>();
             
             services.AddScoped<IBusRepo, BusRepo>();

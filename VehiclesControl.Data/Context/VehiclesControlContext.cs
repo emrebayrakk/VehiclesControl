@@ -51,7 +51,8 @@ namespace VehiclesControl.Data.Context
         {
             if (!optionsBuilder.IsConfigured)
             {
-                var connStr = "Data Source = (localdb)\\ProjectModels; Initial Catalog=master; Database=VehiclesControls; Integrated Security=True;";
+                var connStr = "Data Source=DESKTOP-P87BUPQ;Initial Catalog=VehiclesControl;Integrated Security=True;Connect Timeout=30;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False";
+                
                 optionsBuilder.UseSqlServer(connStr, opt =>
                 {
                     opt.EnableRetryOnFailure();
