@@ -8,9 +8,11 @@ using VehiclesControl.Application.Bus;
 using VehiclesControl.Application.Car;
 using VehiclesControl.Application.User;
 using VehiclesControl.Data.Context;
-using VehiclesControl.Data.Repositories;
 using VehiclesControl.Data.Repositories.CachedRepositories;
-using VehiclesControl.Domain.Interfaces;
+using VehiclesControl.Data.Repositories.Dapper;
+using VehiclesControl.Data.Repositories.EntityFramework;
+using VehiclesControl.Domain.Interfaces.Dapper;
+using VehiclesControl.Domain.Interfaces.EntityFramework;
 
 namespace VehiclesControl.Infrastructure.Configurations
 {
@@ -35,6 +37,8 @@ namespace VehiclesControl.Infrastructure.Configurations
             
             services.AddScoped<ICarRepo, CarRepo>(); //decorator configuration 2 with Scrutor
             services.Decorate<ICarRepo, CachedCarRepo>();
+
+            services.AddScoped<ICarRepositoryDapper,CarRepositoryDapper>();
 
             services.AddScoped<ICarService, CarService>();
             

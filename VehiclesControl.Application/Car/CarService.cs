@@ -1,17 +1,19 @@
-﻿using VehiclesControl.Domain.Entities;
-using VehiclesControl.Domain.Input;
-using VehiclesControl.Domain.Interfaces;
+﻿using VehiclesControl.Domain.Input;
+using VehiclesControl.Domain.Interfaces.Dapper;
+using VehiclesControl.Domain.Interfaces.EntityFramework;
 using VehiclesControl.Domain.Outs;
 
 namespace VehiclesControl.Application.Car
 {
     public class CarService : ICarService
     {
-        public ICarRepo _carRepo;
+        private readonly ICarRepo _carRepo;
+        private readonly ICarRepositoryDapper _carRepositoryDapper;
 
-        public CarService(ICarRepo carRepo)
+        public CarService(ICarRepo carRepo, ICarRepositoryDapper carRepositoryDapper)
         {
             _carRepo = carRepo;
+            _carRepositoryDapper = carRepositoryDapper;
         }
         public ApiResponse<long> CreateCar(CarRequest carInput)
         {
@@ -116,6 +118,20 @@ namespace VehiclesControl.Application.Car
                 throw ex;
             }
             
+        }
+
+        public ApiResponse<List<CarResponse>> CarListWithDapper()
+        {
+            try
+            {
+                var result = _carRepositoryDapper.GetAll();
+                return new ApiResponse<List<CarResponse>>(true, ResultCode.Instance.Ok, "Success", result);
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
         }
     }
 }

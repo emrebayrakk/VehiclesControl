@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using VehiclesControl.Application.Authentication;
-using VehiclesControl.Domain.Interfaces;
+using VehiclesControl.Domain.Interfaces.EntityFramework;
 
 namespace VehiclesControl.Infrastructure.Configurations
 {

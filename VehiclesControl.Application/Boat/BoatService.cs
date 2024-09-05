@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VehiclesControl.Domain.Input;
-using VehiclesControl.Domain.Interfaces;
+using VehiclesControl.Domain.Interfaces.EntityFramework;
 using VehiclesControl.Domain.Outs;
 
 namespace VehiclesControl.Application.Boat

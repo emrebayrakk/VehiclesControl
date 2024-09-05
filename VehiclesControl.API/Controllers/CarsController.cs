@@ -33,7 +33,14 @@ namespace VehiclesControl.API.Controllers
             return _carService.CarList();
         }
 
-    
+        [HttpGet("with-dapper")]
+        [ProducesResponseType(typeof(ApiResponse<List<CarResponse>>), StatusCodes.Status200OK)]
+        public ApiResponse<List<CarResponse>> CarListWithDapper()
+        {
+            return _carService.CarListWithDapper();
+        }
+
+
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<CarResponse>), StatusCodes.Status200OK)]
         public ApiResponse<CarResponse> GetCar(long id)

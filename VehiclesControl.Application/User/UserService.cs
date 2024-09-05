@@ -1,6 +1,6 @@
 ﻿using VehiclesControl.Domain.Input;
 using VehiclesControl.Domain.Inputs;
-using VehiclesControl.Domain.Interfaces;
+using VehiclesControl.Domain.Interfaces.EntityFramework;
 using VehiclesControl.Domain.Outs;
 
 namespace VehiclesControl.Application.User

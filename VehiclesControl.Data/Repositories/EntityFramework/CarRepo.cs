@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 using VehiclesControl.Data.Context;
 using VehiclesControl.Domain.Entities;
 using VehiclesControl.Domain.Input;
-using VehiclesControl.Domain.Interfaces;
+using VehiclesControl.Domain.Interfaces.EntityFramework;
 using VehiclesControl.Domain.Outs;
 
-namespace VehiclesControl.Data.Repositories
+namespace VehiclesControl.Data.Repositories.EntityFramework
 {
     public class CarRepo : GenericRepo<Car, CarRequest, CarResponse>, ICarRepo
     {

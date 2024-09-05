@@ -16,5 +16,6 @@ namespace VehiclesControl.Application.Car
         ApiResponse<CarResponse> GetCarByColor(string color);
         ApiResponse<long> CarByHeadlightsOn(long id);
         ApiResponse<long> CarByHeadlightsOff(long id);
+        ApiResponse<List<CarResponse>> CarListWithDapper();
     }
 }

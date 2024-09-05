@@ -7,9 +7,9 @@ using VehiclesControl.Domain.Entities;
 using VehiclesControl.Domain.Input;
 using VehiclesControl.Domain.Outs;
 
-namespace VehiclesControl.Domain.Interfaces
+namespace VehiclesControl.Domain.Interfaces.EntityFramework
 {
-    public interface ICarRepo : IGenericRepo<Car,CarRequest,CarResponse>
+    public interface IBusRepo : IGenericRepo<Bus, BusRequest, BusResponse>
     {
     }
 }

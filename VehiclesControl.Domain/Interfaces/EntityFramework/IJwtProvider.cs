@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using VehiclesControl.Domain.Entities;
 
-namespace VehiclesControl.Domain.Interfaces
+namespace VehiclesControl.Domain.Interfaces.EntityFramework
 {
     public interface IJwtProvider
     {

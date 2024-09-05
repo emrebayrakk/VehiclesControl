@@ -4,7 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using VehiclesControl.Domain.Entities;
-using VehiclesControl.Domain.Interfaces;
+using VehiclesControl.Domain.Interfaces.EntityFramework;
 
 namespace VehiclesControl.Application.Authentication
 {

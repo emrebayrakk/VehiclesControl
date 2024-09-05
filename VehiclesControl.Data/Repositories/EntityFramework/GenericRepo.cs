@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using VehiclesControl.Domain.Interfaces;
+using VehiclesControl.Domain.Interfaces.EntityFramework;
 
-namespace VehiclesControl.Data.Repositories
+namespace VehiclesControl.Data.Repositories.EntityFramework
 {
     public class GenericRepo<TEntity, TEntityInput, TEntityOutput> : IGenericRepo<TEntity, TEntityInput, TEntityOutput> where TEntity : class
     {
@@ -30,7 +30,7 @@ namespace VehiclesControl.Data.Repositories
 
                 throw ex;
             }
-            
+
         }
 
         public int Delete(long id)
@@ -50,7 +50,7 @@ namespace VehiclesControl.Data.Repositories
 
                 throw ex;
             }
-            
+
         }
 
         public TEntityOutput FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, bool noTracking = true, params Expression<Func<TEntity, object>>[] includes)
@@ -76,7 +76,7 @@ namespace VehiclesControl.Data.Repositories
 
                 throw ex;
             }
-            
+
         }
         public TEntity FirstOrDefault(Expression<Func<TEntity, bool>> predicate, bool noTracking = true, params Expression<Func<TEntity, object>>[] includes)
         {
@@ -100,7 +100,7 @@ namespace VehiclesControl.Data.Repositories
 
                 throw ex;
             }
-            
+
         }
 
         public List<TEntityOutput> GetAll(bool noTracking = true)
@@ -123,7 +123,7 @@ namespace VehiclesControl.Data.Repositories
 
                 throw ex;
             }
-            
+
         }
 
         public int Update(TEntity entity)
@@ -140,7 +140,7 @@ namespace VehiclesControl.Data.Repositories
 
                 throw ex;
             }
-            
+
         }
 
         private static IQueryable<TEntity> ApplyIncludes(IQueryable<TEntity> query, params Expression<Func<TEntity, object>>[] includes)
@@ -162,7 +162,7 @@ namespace VehiclesControl.Data.Repositories
 
                 throw ex;
             }
-            
+
         }
     }
 }

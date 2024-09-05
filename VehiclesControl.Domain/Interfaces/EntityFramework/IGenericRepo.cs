@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VehiclesControl.Domain.Interfaces
+namespace VehiclesControl.Domain.Interfaces.EntityFramework
 {
     public interface IGenericRepo<TEntity, TEntityInput, TEntityOutput> where TEntity : class
     {

@@ -1,6 +1,6 @@
 ﻿using FakeItEasy;
 using VehiclesControl.Domain.Input;
-using VehiclesControl.Domain.Interfaces;
+using VehiclesControl.Domain.Interfaces.EntityFramework;
 
 namespace VehiclesControl.Tests.Bus
 {

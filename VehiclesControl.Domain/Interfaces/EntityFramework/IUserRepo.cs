@@ -7,9 +7,9 @@ using VehiclesControl.Domain.Entities;
 using VehiclesControl.Domain.Input;
 using VehiclesControl.Domain.Outs;
 
-namespace VehiclesControl.Domain.Interfaces
+namespace VehiclesControl.Domain.Interfaces.EntityFramework
 {
-    public interface IBoatRepo : IGenericRepo<Boat, BoatRequest, BoatResponse>
+    public interface IUserRepo : IGenericRepo<User, UserRequest, UserResponse>
     {
     }
 }

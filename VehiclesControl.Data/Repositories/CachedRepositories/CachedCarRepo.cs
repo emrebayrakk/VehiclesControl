@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using VehiclesControl.Domain.Entities;
 using VehiclesControl.Domain.Input;
-using VehiclesControl.Domain.Interfaces;
+using VehiclesControl.Domain.Interfaces.EntityFramework;
 using VehiclesControl.Domain.Outs;
 
 namespace VehiclesControl.Data.Repositories.CachedRepositories
