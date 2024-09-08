@@ -64,8 +64,16 @@ namespace VehiclesControl.API.Controllers
             var response = _carService.CreateCar(car);
             return response;
         }
+        [HttpPost("with-dapper-created")]
+        [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
+        public ApiResponse<long> CreateWithDapper([FromBody] CarRequest car)
+        {
+            var response = _carService.CreateCarWithDapper(car);
+            return response;
+        }
 
-      
+
         [HttpPatch("{id}/HeadlightsOn")]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status200OK)]
         public ApiResponse<long> CarHeadlightsOn(long id)

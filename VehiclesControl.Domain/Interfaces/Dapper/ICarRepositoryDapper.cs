@@ -7,8 +7,8 @@ namespace VehiclesControl.Domain.Interfaces.Dapper
     {
         List<CarResponse> GetAll();
         CarResponse GetById(long id);
-        long AddCar(UserRequest userRequest);
-        long UpdateCar(UserRequest userRequest);
+        long AddCar(CarRequest carRequest);
+        long UpdateCar(CarRequest carRequest);
         long DeleteCar(long id);
     }
 }

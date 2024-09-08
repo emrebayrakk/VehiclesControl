@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using VehiclesControl.Domain.Entities;
 using VehiclesControl.Domain.Input;
 using VehiclesControl.Domain.Interfaces.Dapper;
 using VehiclesControl.Domain.Outs;
@@ -16,9 +17,19 @@ namespace VehiclesControl.Data.Repositories.Dapper
             _configuration = configuration;
         }
 
-        public long AddCar(UserRequest userRequest)
+        public long AddCar(CarRequest carRequest)
         {
-            throw new NotImplementedException();
+            Car newcar = new Car()
+            {
+                Color = carRequest.Color,
+                HeadlightsOn = carRequest.HeadlightsOn,
+                Wheels = carRequest.Wheels,
+                CreatedDate = DateTime.Now
+            };
+            
+            using var connection = GetConnection();
+            var res = connection.Execute($"INSERT INTO CARS (Color,HeadlightsOn,Wheels,CreatedDate) VALUES (@Color, @HeadlightsOn, @Wheels, @CreatedDate)", newcar);
+            return res;
         }
 
         public long DeleteCar(long id)
@@ -47,7 +58,7 @@ namespace VehiclesControl.Data.Repositories.Dapper
             }
         }
 
-        public long UpdateCar(UserRequest userRequest)
+        public long UpdateCar(CarRequest carRequest)
         {
             throw new NotImplementedException();
         }

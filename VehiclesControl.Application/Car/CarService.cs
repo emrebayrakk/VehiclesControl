@@ -147,5 +147,20 @@ namespace VehiclesControl.Application.Car
                 throw ex;
             }
         }
+
+        public ApiResponse<long> CreateCarWithDapper(CarRequest carInput)
+        {
+            try
+            {
+                long id = _carRepositoryDapper.AddCar(carInput);
+                if (id != -1)
+                    return new ApiResponse<long>(true, ResultCode.Instance.Ok, "Success", id);
+                return new ApiResponse<long>(false, ResultCode.Instance.Failed, "ErrorOccured", -1);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
     }
 }
