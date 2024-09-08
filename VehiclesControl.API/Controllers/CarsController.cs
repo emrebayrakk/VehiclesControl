@@ -25,7 +25,7 @@ namespace VehiclesControl.API.Controllers
 
         #endregion
 
-        
+
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<List<CarResponse>>), StatusCodes.Status200OK)]
         public ApiResponse<List<CarResponse>> CarList()
@@ -70,6 +70,14 @@ namespace VehiclesControl.API.Controllers
         public ApiResponse<long> CreateWithDapper([FromBody] CarRequest car)
         {
             var response = _carService.CreateCarWithDapper(car);
+            return response;
+        }
+        [HttpPost("with-dapper-delete/{id}")]
+        [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
+        public ApiResponse<long> DeleteWithDapper(long id)
+        {
+            var response = _carService.DeleteCarWithDapper(id);
             return response;
         }
 

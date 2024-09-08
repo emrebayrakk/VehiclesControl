@@ -177,5 +177,20 @@ namespace VehiclesControl.Application.Car
                 throw ex;
             }
         }
+
+        public ApiResponse<long> DeleteCarWithDapper(long id)
+        {
+            try
+            {
+                var res = _carRepositoryDapper.DeleteCar(id);
+                if (res != -1)
+                    return new ApiResponse<long>(true, ResultCode.Instance.Ok, "Success", res);
+                return new ApiResponse<long>(false, ResultCode.Instance.Failed, "ErrorOccured", -1);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
     }
 }

@@ -34,7 +34,11 @@ namespace VehiclesControl.Data.Repositories.Dapper
 
         public long DeleteCar(long id)
         {
-            throw new NotImplementedException();
+            using var connection = GetConnection();
+            var carResponse = connection.Execute
+                ("DELETE FROM CARS WHERE Id = @Id", new { Id = id });
+            return (long)carResponse;
+
         }
 
         public List<CarResponse> GetAll()

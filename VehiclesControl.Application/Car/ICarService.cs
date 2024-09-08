@@ -15,5 +15,6 @@ namespace VehiclesControl.Application.Car
         ApiResponse<CarResponse> GetCarWithDapper(long id);
         ApiResponse<long> CreateCarWithDapper(CarRequest carInput);
         ApiResponse<long> UpdateCarWithDapper(CarRequest carInput);
+        ApiResponse<long> DeleteCarWithDapper(long id);
     }
 }
