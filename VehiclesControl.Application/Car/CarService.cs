@@ -133,5 +133,19 @@ namespace VehiclesControl.Application.Car
                 throw ex;
             }
         }
+
+        public ApiResponse<CarResponse> GetCarWithDapper(long id)
+        {
+            try
+            {
+                var result = _carRepositoryDapper.GetById(id);
+                return new ApiResponse<CarResponse>(true, ResultCode.Instance.Ok, "Success", result);
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+        }
     }
 }

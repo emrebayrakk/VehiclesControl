@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using VehiclesControl.Domain.Input;
+﻿using VehiclesControl.Domain.Input;
 using VehiclesControl.Domain.Outs;
 
 namespace VehiclesControl.Application.Car
@@ -17,5 +12,6 @@ namespace VehiclesControl.Application.Car
         ApiResponse<long> CarByHeadlightsOn(long id);
         ApiResponse<long> CarByHeadlightsOff(long id);
         ApiResponse<List<CarResponse>> CarListWithDapper();
+        ApiResponse<CarResponse> GetCarWithDapper(long id);
     }
 }

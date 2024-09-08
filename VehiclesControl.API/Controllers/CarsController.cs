@@ -48,7 +48,14 @@ namespace VehiclesControl.API.Controllers
             return _carService.GetCar(id);
         }
 
-    
+        [HttpGet("with-dapper/{id}")]
+        [ProducesResponseType(typeof(ApiResponse<CarResponse>), StatusCodes.Status200OK)]
+        public ApiResponse<CarResponse> GetCarWithDapper(long id)
+        {
+            return _carService.GetCarWithDapper(id);
+        }
+
+
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
