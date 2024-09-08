@@ -73,6 +73,15 @@ namespace VehiclesControl.API.Controllers
             return response;
         }
 
+        [HttpPost("with-dapper-updated")]
+        [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
+        public ApiResponse<long> UpdateWithDapper([FromBody] CarRequest car)
+        {
+            var response = _carService.UpdateCarWithDapper(car);
+            return response;
+        }
+
 
         [HttpPatch("{id}/HeadlightsOn")]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status200OK)]

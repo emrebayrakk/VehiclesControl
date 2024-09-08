@@ -28,7 +28,7 @@ namespace VehiclesControl.Data.Repositories.Dapper
             };
             
             using var connection = GetConnection();
-            var res = connection.Execute($"INSERT INTO CARS (Color,HeadlightsOn,Wheels,CreatedDate) VALUES (@Color, @HeadlightsOn, @Wheels, @CreatedDate)", newcar);
+            var res = connection.Execute("INSERT INTO CARS (Color,HeadlightsOn,Wheels,CreatedDate) VALUES (@Color, @HeadlightsOn, @Wheels, @CreatedDate)", newcar);
             return res;
         }
 
@@ -60,7 +60,22 @@ namespace VehiclesControl.Data.Repositories.Dapper
 
         public long UpdateCar(CarRequest carRequest)
         {
-            throw new NotImplementedException();
+            
+
+            using var connection = GetConnection();
+            var carResponse = connection.QueryFirstOrDefault<Car>
+                ("SELECT * FROM CARS WHERE Id = @Id", new { Id = carRequest.Id });
+            Car newcar = new Car()
+            {
+                Id = carRequest.Id.GetValueOrDefault(),
+                Color = carRequest.Color,
+                HeadlightsOn = carRequest.HeadlightsOn,
+                Wheels = carRequest.Wheels,
+                UpdatedDate = DateTime.Now,
+                CreatedDate = carResponse != null ? carResponse.CreatedDate : DateTime.Now,
+            };
+            var res = connection.Execute("UPDATE CARS SET Color = @Color, HeadlightsOn = @HeadlightsOn, Wheels = @Wheels, UpdatedDate = @UpdatedDate, CreatedDate = @CreatedDate WHERE Id = @Id", newcar);
+            return res;
         }
 
         private SqlConnection GetConnection()

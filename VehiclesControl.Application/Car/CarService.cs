@@ -162,5 +162,20 @@ namespace VehiclesControl.Application.Car
                 throw ex;
             }
         }
+
+        public ApiResponse<long> UpdateCarWithDapper(CarRequest carInput)
+        {
+            try
+            {
+                long id = _carRepositoryDapper.UpdateCar(carInput);
+                if (id != -1)
+                    return new ApiResponse<long>(true, ResultCode.Instance.Ok, "Success", id);
+                return new ApiResponse<long>(false, ResultCode.Instance.Failed, "ErrorOccured", -1);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
     }
 }
