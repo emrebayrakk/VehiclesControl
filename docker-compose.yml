@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  mssql:
+    image: "mcr.microsoft.com/mssql/server:2019-latest"
+    container_name: "mssql-server"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Passw0rd@123
+    ports:
+      - "1433:1433"
+    networks:
+      - vehiclescontrol-network
+
+  vehiclescontrol-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: "vehiclescontrol-api"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=mssql-server,1433;Database=VehiclesControlDB;User Id=sa;Password=YourStrong@Passw0rd;
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    depends_on:
+      - mssql
+    networks:
+      - vehiclescontrol-network
+
+networks:
+  vehiclescontrol-network:
+    driver: bridge

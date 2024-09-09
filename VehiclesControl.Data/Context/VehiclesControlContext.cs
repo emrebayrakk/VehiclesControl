@@ -51,7 +51,7 @@ namespace VehiclesControl.Data.Context
         {
             if (!optionsBuilder.IsConfigured)
             {
-                var connStr = "Data Source=DESKTOP-P87BUPQ;Initial Catalog=VehiclesControl;Integrated Security=True;Connect Timeout=30;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False";
+                var connStr = "Server=mssql-server,1433;Database=VehiclesControlDB;User Id=sa;Password=Passw0rd@123;";
                 
                 optionsBuilder.UseSqlServer(connStr, opt =>
                 {
