@@ -6,6 +6,7 @@ namespace VehiclesControl.Application.Car
     public interface ICarService
     {
         ApiResponse<long> CreateCar(CarRequest carInput);
+        ApiResponse<Domain.Entities.Car> AddCar(CarRequest carInput);
         ApiResponse<List<CarResponse>> CarList();
         ApiResponse<CarResponse> GetCar(long id);
         ApiResponse<CarResponse> GetCarByColor(string color);

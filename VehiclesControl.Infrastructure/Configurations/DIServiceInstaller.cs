@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using VehiclesControl.Application.Boat;
 using VehiclesControl.Application.Bus;
 using VehiclesControl.Application.Car;
+using VehiclesControl.Application.RabbitMq;
 using VehiclesControl.Application.User;
 using VehiclesControl.Data.Context;
 using VehiclesControl.Data.Repositories.CachedRepositories;
@@ -34,6 +35,7 @@ namespace VehiclesControl.Infrastructure.Configurations
             //    return new CachedCarRepo(cache,
             //        new CarRepo(context, mapper));
             //});
+            services.AddScoped<ICarDriverNotificationPublisherService, CarDriverNotificationPublisherService>();
             
             services.AddScoped<ICarRepo, CarRepo>(); //decorator configuration 2 with Scrutor
             services.Decorate<ICarRepo, CachedCarRepo>();

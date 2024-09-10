@@ -1,4 +1,5 @@
-﻿using VehiclesControl.Domain.Input;
+﻿using VehiclesControl.Application.RabbitMq;
+using VehiclesControl.Domain.Input;
 using VehiclesControl.Domain.Interfaces.Dapper;
 using VehiclesControl.Domain.Interfaces.EntityFramework;
 using VehiclesControl.Domain.Outs;
@@ -9,11 +10,13 @@ namespace VehiclesControl.Application.Car
     {
         private readonly ICarRepo _carRepo;
         private readonly ICarRepositoryDapper _carRepositoryDapper;
+        private readonly ICarDriverNotificationPublisherService _publisherService;
 
-        public CarService(ICarRepo carRepo, ICarRepositoryDapper carRepositoryDapper)
+        public CarService(ICarRepo carRepo, ICarRepositoryDapper carRepositoryDapper, ICarDriverNotificationPublisherService publisherService)
         {
             _carRepo = carRepo;
             _carRepositoryDapper = carRepositoryDapper;
+            _publisherService = publisherService;
         }
         public ApiResponse<long> CreateCar(CarRequest carInput)
         {
@@ -186,6 +189,22 @@ namespace VehiclesControl.Application.Car
                 if (res != -1)
                     return new ApiResponse<long>(true, ResultCode.Instance.Ok, "Success", res);
                 return new ApiResponse<long>(false, ResultCode.Instance.Failed, "ErrorOccured", -1);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public ApiResponse<Domain.Entities.Car> AddCar(CarRequest carInput)
+        {
+            try
+            {
+                var res = _carRepo.AddEntity(carInput);
+                _publisherService.SendNotification(res.Id, res);
+                if (res != null)
+                    return new ApiResponse<Domain.Entities.Car>(true, ResultCode.Instance.Ok, "Success", res);
+                return new ApiResponse<Domain.Entities.Car>(false, ResultCode.Instance.Failed, "ErrorOccured", null);
             }
             catch (Exception ex)
             {

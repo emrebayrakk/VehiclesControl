@@ -1,5 +1,8 @@
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using VehiclesControl.API.Middleware;
+using VehiclesControl.Data.Context;
 using VehiclesControl.Infrastructure.Configurations;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +13,31 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ExceptionMiddleware>();
-builder.Services
+
+builder.Services.AddMassTransit(conf =>
+{
+    conf.UsingRabbitMq((ctx, cfg) =>
+    {
+        cfg.Host("localhost", "/", h =>
+        {
+            h.Username("myuser");
+            h.Password("mypass");
+        });
+    });
+});
+
+builder.Services.AddDbContext<VehiclesControlContext>(
+                       options =>
+                       {
+                           var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+                           if (!builder.Environment.IsDevelopment())
+                           {
+                               var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
+                               connectionString = string.Format(connectionString, password);
+                           }
+                           options.UseSqlServer(connectionString);
+                       });
+builder.Services 
     .InstallServices(builder.Configuration,
     typeof(IServiceInstaller).Assembly);
 Log.Logger = new LoggerConfiguration()
@@ -43,5 +70,11 @@ app.UseMiddleware<ExceptionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<VehiclesControlContext>();
+    db.Database.Migrate();
+}
 
 app.Run();

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VehiclesControl.Application.Car;
+using VehiclesControl.Domain.Entities;
 using VehiclesControl.Domain.Input;
 using VehiclesControl.Domain.Outs;
 
@@ -62,6 +63,14 @@ namespace VehiclesControl.API.Controllers
         public ApiResponse<long> Create([FromBody] CarRequest car)
         {
             var response = _carService.CreateCar(car);
+            return response;
+        }
+        [HttpPost("rabbitmq")]
+        [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
+        public ApiResponse<Car> CreateCar([FromBody] CarRequest car)
+        {
+            var response = _carService.AddCar(car);
             return response;
         }
         [HttpPost("with-dapper-created")]

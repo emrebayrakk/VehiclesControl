@@ -10,6 +10,7 @@ namespace VehiclesControl.Domain.Interfaces.EntityFramework
     public interface IGenericRepo<TEntity, TEntityInput, TEntityOutput> where TEntity : class
     {
         int Add(TEntityInput entity);
+        TEntity AddEntity(TEntityInput entity);
         int Update(TEntity entity);
         int Delete(long id);
         TEntityOutput FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, bool noTracking = true, params Expression<Func<TEntity, object>>[] includes);

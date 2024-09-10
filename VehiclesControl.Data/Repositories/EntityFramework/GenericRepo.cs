@@ -32,6 +32,22 @@ namespace VehiclesControl.Data.Repositories.EntityFramework
             }
 
         }
+        public TEntity AddEntity(TEntityInput entity)
+        {
+            try
+            {
+                var mappedEntity = _mapper.Map<TEntity>(entity);
+                this.entity.Add(mappedEntity);
+                dbContext.SaveChanges();
+                return mappedEntity;
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+
+        }
 
         public int Delete(long id)
         {

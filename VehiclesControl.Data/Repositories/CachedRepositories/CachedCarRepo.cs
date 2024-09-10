@@ -23,6 +23,11 @@ namespace VehiclesControl.Data.Repositories.CachedRepositories
             return _carRepo.Add(entity);
         }
 
+        public Car AddEntity(CarRequest entity)
+        {
+            return _carRepo.AddEntity(entity);
+        }
+
         public int Delete(long id)
         {
             return _carRepo.Delete(id);

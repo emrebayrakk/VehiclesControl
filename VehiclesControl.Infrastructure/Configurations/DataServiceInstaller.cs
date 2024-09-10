@@ -10,11 +10,8 @@ namespace VehiclesControl.Infrastructure.Configurations
 {
     public class DataServiceInstaller : IServiceInstaller
     {
-        private const string SectionName = "GetTheNewsContext";
         public void Install(IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<VehiclesControlContext>(options =>
-    options.UseSqlServer(configuration.GetConnectionString(SectionName)));
 
             var mapperConfig = new MapperConfiguration(mc =>
             {
