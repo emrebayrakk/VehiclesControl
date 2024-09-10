@@ -21,12 +21,14 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=mssql-server,1433;Database=VehiclesControlDB;User Id=sa;Password=Passw0rd@123;
     ports:
-      - "8080:8080"
-      - "8081:8081"
+      - "5019:5019"
+      - "7264:7264"
     depends_on:
       - mssql
     networks:
       - vehiclescontrol-network
+    volumes:
+      - ./src:/src
 
 networks:
   vehiclescontrol-network:
