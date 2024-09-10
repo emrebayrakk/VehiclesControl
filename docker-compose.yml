@@ -19,7 +19,7 @@ services:
     container_name: "vehiclescontrol-api"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=mssql-server,1433;Database=VehiclesControlDB;User Id=sa;Password=YourStrong@Passw0rd;
+      - ConnectionStrings__DefaultConnection=Server=mssql-server,1433;Database=VehiclesControlDB;User Id=sa;Password=Passw0rd@123;
     ports:
       - "8080:8080"
       - "8081:8081"
