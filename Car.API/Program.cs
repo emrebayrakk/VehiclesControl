@@ -1,3 +1,5 @@
+using Car.API.Data;
+using Car.API.Services;
 using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +10,10 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
+builder.Services.AddScoped<IDbConnectionFactory, MongoDbConnectionFactory>();
+builder.Services.AddScoped<ICarService, CarService>();
 
 builder.Services.AddMassTransit(conf =>
 {
