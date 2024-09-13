@@ -14,6 +14,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ExceptionMiddleware>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        builder => builder.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader());
+});
+
 builder.Services.AddMassTransit(conf =>
 {
     conf.UsingRabbitMq((ctx, cfg) =>
@@ -76,5 +84,6 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<VehiclesControlContext>();
     db.Database.Migrate();
 }
+app.UseCors("AllowAll");
 
 app.Run();

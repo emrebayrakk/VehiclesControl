@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VehiclesControl.Tests", "Ve
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Car.API", "Car.API\Car.API.csproj", "{6CFF683F-B5F3-411C-8F50-763AEEB68CEC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VehiclesControl.Web", "VehiclesControl.Web\VehiclesControl.Web.csproj", "{683066F6-4321-4FC1-8225-EEF265B9718D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VehiclesControl.Web", "VehiclesControl.Web\VehiclesControl.Web.csproj", "{683066F6-4321-4FC1-8225-EEF265B9718D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
