@@ -19,5 +19,11 @@ namespace Car.API.Services
         {
             await carCollection.InsertOneAsync(car);
         }
+
+        public async Task<List<Data.Entities.Car>> GetCars()
+        {
+            var response = await carCollection.FindAsync(_ => true);
+            return await response.ToListAsync();
+        }
     }
 }
