@@ -11,7 +11,7 @@
 }
 else
 {
-    <MudDataGrid T="CarResponse" Items="@CarResponses" ReadOnly="@_readOnly" EditMode="@(_isCellEditMode ? DataGridEditMode.Cell : DataGridEditMode.Form)"
+    @* <MudDataGrid T="CarResponse"Items="@CarResponses" ReadOnly="@_readOnly" EditMode="@(_isCellEditMode ? DataGridEditMode.Cell : DataGridEditMode.Form)"
                  StartedEditingItem="@StartedEditingItem" CanceledEditingItem="@CanceledEditingItem" CommittedItemChanges="@CommittedItemChanges"
                  Bordered="true" Dense="true" EditTrigger="@(_editTriggerRowClick ? DataGridEditTrigger.OnRowClick : DataGridEditTrigger.Manual)">
         <Columns>
@@ -26,5 +26,34 @@ else
             </TemplateColumn>
         </Columns>
     </MudDataGrid>
+    <div class="d-flex flex-column align-center">
+        <MudPagination SelectedChanged="PageChanged" Rectangular="true" Variant="Variant.Filled" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="my-4" />
+    </div> *@
+
+    <MudTable @ref="@_table" Items="@CarResponses" RowsPerPage="10" Hover="true" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info">
+        <HeaderContent>
+            <MudTh>Id</MudTh>
+            <MudTh>Wheels</MudTh>
+            <MudTh>Color</MudTh>
+            <MudTh>HeadlightsOn</MudTh>
+            <MudTh Class="small">Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Id">@context.Id</MudTd>
+            <MudTd DataLabel="Wheels">@context.Wheels</MudTd>
+            <MudTd DataLabel="Color">@context.Color</MudTd>
+            <MudTd DataLabel="HeadlightsOn"><MudSwitch @bind-Value="@context.HeadlightsOn" Color="Color.Secondary" /></MudTd>
+            <MudTd>
+                <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+                    <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.CallToAction" Color="Color.Error" OnClick="() => {CarResponse = context; OnButtonClicked(); }" />
+                </MudButtonGroup>
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <div class="d-flex flex-column align-center">
+                <MudPagination ShowFirstButton="true" ShowLastButton="true" SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="mt-3 mb-3" />
+            </div>
+        </PagerContent>
+    </MudTable> 
 }
 

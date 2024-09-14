@@ -81,7 +81,7 @@ namespace VehiclesControl.API.Controllers
             var response = _carService.CreateCarWithDapper(car);
             return response;
         }
-        [HttpPost("with-dapper-delete/{id}")]
+        [HttpDelete("with-dapper-delete/{id}")]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
         public ApiResponse<long> DeleteWithDapper(long id)
@@ -90,7 +90,7 @@ namespace VehiclesControl.API.Controllers
             return response;
         }
 
-        [HttpPost("with-dapper-updated")]
+        [HttpPut("with-dapper-updated")]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
         public ApiResponse<long> UpdateWithDapper([FromBody] CarRequest car)

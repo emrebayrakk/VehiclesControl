@@ -84,7 +84,7 @@ namespace VehiclesControl.Data.Repositories.Dapper
 
         private SqlConnection GetConnection()
         {
-            return new SqlConnection(_configuration.GetConnectionString("GetTheNewsContext"));
+            return new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
         }
     }
 }

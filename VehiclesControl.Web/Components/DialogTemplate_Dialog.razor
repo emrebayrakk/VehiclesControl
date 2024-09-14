@@ -1,0 +1,43 @@
+﻿@using VehiclesControl.Domain.Outs
+
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <div>
+                <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Class="mr-3 mb-n1" />
+                <MudIcon Icon="@Icons.Material.Filled.Update" Class="mr-3 mb-n1" />
+            </div>
+            Delete car or Update?
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="@Car.Id" Label="Car ID" ReadOnly="true" />
+        <MudTextField @bind-Value="@Car.Wheels" Label="Car Wheels" ReadOnly="false" />
+        <MudTextField @bind-Value="@Car.HeadlightsOn" Label="Car HeadlightsOn" ReadOnly="false" />
+        <MudSwitch @bind-Value="@Car.HeadlightsOn" Color="Color.Secondary" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="UpdateCar">Update</MudButton>
+        <MudButton Color="Color.Error" OnClick="DeleteCar">Delete</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public CarResponse Car { get; set; }
+
+    private void UpdateCar()
+    {
+        MudDialog.Close(DialogResult.Ok(Car));
+    } 
+
+    private void DeleteCar()
+    {
+        MudDialog.Cancel();
+    }
+}

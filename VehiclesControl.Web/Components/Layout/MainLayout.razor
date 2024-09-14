@@ -3,8 +3,16 @@
 
 <MudThemeProvider />
 <MudPopoverProvider />
-<MudDialogProvider />
 <MudSnackbarProvider />
+
+<MudDialogProvider FullWidth="true"
+                   MaxWidth="MaxWidth.ExtraSmall"
+                   CloseButton="true"
+                   BackdropClick="false"
+                   NoHeader="true"
+                   Position="DialogPosition.Center"
+                   CloseOnEscapeKey="true"
+                   BackgroundClass="my-custom-class" />
 
 <MudLayout>
     <MudAppBar style="background-color:#ccccff; color:black;">
@@ -15,11 +23,19 @@
         <NavMenu/>
     </MudDrawer>
     <MudMainContent>
-        <div style="margin-left:20px; margin-top:20px;">
+        <div style="margin-left:20px; margin-top:20px; margin-right:20px;">
         @Body
         </div>
     </MudMainContent>
 </MudLayout>
+
+
+<style>
+    .my-custom-class {
+        backdrop-filter: blur(10px);
+    }
+</style>
+
 @code {
     bool _drawerOpen = true;
 
