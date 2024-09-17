@@ -36,9 +36,10 @@ namespace VehiclesControl.API.Controllers
 
         [HttpGet("with-dapper")]
         [ProducesResponseType(typeof(ApiResponse<List<CarResponse>>), StatusCodes.Status200OK)]
-        public ApiResponse<List<CarResponse>> CarListWithDapper()
+        public async Task<ApiResponse<List<CarResponse>>> CarListWithDapper()
         {
-            return _carService.CarListWithDapper();
+            var res =  await _carService.CarListWithDapper();
+            return res;
         }
 
 
@@ -51,9 +52,9 @@ namespace VehiclesControl.API.Controllers
 
         [HttpGet("with-dapper/{id}")]
         [ProducesResponseType(typeof(ApiResponse<CarResponse>), StatusCodes.Status200OK)]
-        public ApiResponse<CarResponse> GetCarWithDapper(long id)
+        public async Task<ApiResponse<CarResponse>> GetCarWithDapper(long id)
         {
-            return _carService.GetCarWithDapper(id);
+            return await _carService.GetCarWithDapper(id);
         }
 
 
@@ -76,26 +77,26 @@ namespace VehiclesControl.API.Controllers
         [HttpPost("with-dapper-created")]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
-        public ApiResponse<long> CreateWithDapper([FromBody] CarRequest car)
+        public async Task<ApiResponse<bool>> CreateWithDapper([FromBody] CarRequest car)
         {
-            var response = _carService.CreateCarWithDapper(car);
+            var response = await _carService.CreateCarWithDapper(car);
             return response;
         }
         [HttpDelete("with-dapper-delete/{id}")]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
-        public ApiResponse<long> DeleteWithDapper(long id)
+        public async Task<ApiResponse<bool>> DeleteWithDapper(long id)
         {
-            var response = _carService.DeleteCarWithDapper(id);
+            var response = await _carService.DeleteCarWithDapper(id);
             return response;
         }
 
         [HttpPut("with-dapper-updated")]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<long>), StatusCodes.Status404NotFound)]
-        public ApiResponse<long> UpdateWithDapper([FromBody] CarRequest car)
+        public async Task<ApiResponse<bool>> UpdateWithDapper([FromBody] CarRequest car)
         {
-            var response = _carService.UpdateCarWithDapper(car);
+            var response = await _carService.UpdateCarWithDapper(car);
             return response;
         }
 

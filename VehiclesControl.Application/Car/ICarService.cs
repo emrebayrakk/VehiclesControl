@@ -12,10 +12,10 @@ namespace VehiclesControl.Application.Car
         ApiResponse<CarResponse> GetCarByColor(string color);
         ApiResponse<long> CarByHeadlightsOn(long id);
         ApiResponse<long> CarByHeadlightsOff(long id);
-        ApiResponse<List<CarResponse>> CarListWithDapper();
-        ApiResponse<CarResponse> GetCarWithDapper(long id);
-        ApiResponse<long> CreateCarWithDapper(CarRequest carInput);
-        ApiResponse<long> UpdateCarWithDapper(CarRequest carInput);
-        ApiResponse<long> DeleteCarWithDapper(long id);
+        Task<ApiResponse<List<CarResponse>>> CarListWithDapper();
+        Task<ApiResponse<bool>> CreateCarWithDapper(CarRequest carInput);
+        Task<ApiResponse<bool>> UpdateCarWithDapper(CarRequest carInput);
+        Task<ApiResponse<bool>> DeleteCarWithDapper(long id);
+        Task<ApiResponse<CarResponse>> GetCarWithDapper(long id);
     }
 }

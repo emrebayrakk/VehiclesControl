@@ -1,4 +1,5 @@
 ﻿using VehiclesControl.Application.RabbitMq;
+using VehiclesControl.Domain.Entities;
 using VehiclesControl.Domain.Input;
 using VehiclesControl.Domain.Interfaces.Dapper;
 using VehiclesControl.Domain.Interfaces.EntityFramework;
@@ -123,12 +124,19 @@ namespace VehiclesControl.Application.Car
             
         }
 
-        public ApiResponse<List<CarResponse>> CarListWithDapper()
+        public async Task<ApiResponse<List<CarResponse>>> CarListWithDapper()
         {
             try
             {
-                var result = _carRepositoryDapper.GetAll();
-                return new ApiResponse<List<CarResponse>>(true, ResultCode.Instance.Ok, "Success", result);
+                var result = await _carRepositoryDapper.GetAllAsync();
+                var carResponseList = result.Select(car => new CarResponse
+                {
+                    Id = car.Id,
+                    Color = car.Color,
+                    HeadlightsOn = car.HeadlightsOn,
+                    Wheels = car.Wheels
+                }).ToList();
+                return new ApiResponse<List<CarResponse>>(true, ResultCode.Instance.Ok, "Success", carResponseList);
             }
             catch (Exception ex)
             {
@@ -137,12 +145,19 @@ namespace VehiclesControl.Application.Car
             }
         }
 
-        public ApiResponse<CarResponse> GetCarWithDapper(long id)
+        public async Task<ApiResponse<CarResponse>> GetCarWithDapper(long id)
         {
             try
             {
-                var result = _carRepositoryDapper.GetById(id);
-                return new ApiResponse<CarResponse>(true, ResultCode.Instance.Ok, "Success", result);
+                var result = await _carRepositoryDapper.GetByIdAsync(id);
+                var mappedCar = new CarResponse
+                {
+                    Color = result.Color,
+                    HeadlightsOn = result.HeadlightsOn,
+                    Wheels = result.Wheels,
+                    Id = result.Id
+                };
+                return new ApiResponse<CarResponse>(true, ResultCode.Instance.Ok, "Success", mappedCar);
             }
             catch (Exception ex)
             {
@@ -151,14 +166,22 @@ namespace VehiclesControl.Application.Car
             }
         }
 
-        public ApiResponse<long> CreateCarWithDapper(CarRequest carInput)
+        public async Task<ApiResponse<bool>> CreateCarWithDapper(CarRequest carInput)
         {
             try
             {
-                long id = _carRepositoryDapper.AddCar(carInput);
-                if (id != -1)
-                    return new ApiResponse<long>(true, ResultCode.Instance.Ok, "Success", id);
-                return new ApiResponse<long>(false, ResultCode.Instance.Failed, "ErrorOccured", -1);
+
+                var newCar = new Domain.Entities.Car
+                {
+                    Color = carInput.Color,
+                    CreatedDate = DateTime.Now,
+                    HeadlightsOn = carInput.HeadlightsOn,
+                    Wheels = carInput.Wheels,
+                };
+                var added = await _carRepositoryDapper.InsertAsync(newCar);
+                if (added)
+                    return new ApiResponse<bool>(true, ResultCode.Instance.Ok, "Success", added);
+                return new ApiResponse<bool>(false, ResultCode.Instance.Failed, "ErrorOccured", false);
             }
             catch (Exception ex)
             {
@@ -166,14 +189,22 @@ namespace VehiclesControl.Application.Car
             }
         }
 
-        public ApiResponse<long> UpdateCarWithDapper(CarRequest carInput)
+        public async Task<ApiResponse<bool>> UpdateCarWithDapper(CarRequest carInput)
         {
             try
             {
-                long id = _carRepositoryDapper.UpdateCar(carInput);
-                if (id != -1)
-                    return new ApiResponse<long>(true, ResultCode.Instance.Ok, "Success", id);
-                return new ApiResponse<long>(false, ResultCode.Instance.Failed, "ErrorOccured", -1);
+                var newCar = new Domain.Entities.Car
+                {
+                    UpdatedDate = DateTime.Now,
+                    Color = carInput.Color,
+                    HeadlightsOn = carInput.HeadlightsOn,
+                    Id = carInput.Id.GetValueOrDefault(),
+                    Wheels = carInput.Wheels
+                };
+                var updated = await _carRepositoryDapper.UpdateAsync(newCar);
+                if (updated)
+                    return new ApiResponse<bool>(true, ResultCode.Instance.Ok, "Success", updated);
+                return new ApiResponse<bool>(false, ResultCode.Instance.Failed, "ErrorOccured",false);
             }
             catch (Exception ex)
             {
@@ -181,14 +212,14 @@ namespace VehiclesControl.Application.Car
             }
         }
 
-        public ApiResponse<long> DeleteCarWithDapper(long id)
+        public async Task<ApiResponse<bool>> DeleteCarWithDapper(long id)
         {
             try
             {
-                var res = _carRepositoryDapper.DeleteCar(id);
-                if (res != -1)
-                    return new ApiResponse<long>(true, ResultCode.Instance.Ok, "Success", res);
-                return new ApiResponse<long>(false, ResultCode.Instance.Failed, "ErrorOccured", -1);
+                var res = await _carRepositoryDapper.DeleteAsync(id);
+                if (res)
+                    return new ApiResponse<bool>(true, ResultCode.Instance.Ok, "Success", res);
+                return new ApiResponse<bool>(false, ResultCode.Instance.Failed, "ErrorOccured", false);
             }
             catch (Exception ex)
             {

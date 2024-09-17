@@ -11,6 +11,7 @@ using VehiclesControl.Application.User;
 using VehiclesControl.Data.Context;
 using VehiclesControl.Data.Repositories.CachedRepositories;
 using VehiclesControl.Data.Repositories.Dapper;
+using VehiclesControl.Data.Repositories.Dapper.DapperORM;
 using VehiclesControl.Data.Repositories.EntityFramework;
 using VehiclesControl.Domain.Interfaces.Dapper;
 using VehiclesControl.Domain.Interfaces.EntityFramework;
@@ -40,7 +41,11 @@ namespace VehiclesControl.Infrastructure.Configurations
             services.AddScoped<ICarRepo, CarRepo>(); //decorator configuration 2 with Scrutor
             services.Decorate<ICarRepo, CachedCarRepo>();
 
-            services.AddScoped<ICarRepositoryDapper,CarRepositoryDapper>();
+            services.AddScoped<ICarRepositoryDapper, CarRepositoryDapper>();
+
+            services.AddTransient<IDapperContext, DapperContext>();
+            services.AddTransient<ISqlToolsProvider, SqlToolsProvider>();
+            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
             services.AddScoped<ICarService, CarService>();
             
