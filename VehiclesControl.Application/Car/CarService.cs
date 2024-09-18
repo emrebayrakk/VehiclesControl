@@ -134,7 +134,8 @@ namespace VehiclesControl.Application.Car
                     Id = car.Id,
                     Color = car.Color,
                     HeadlightsOn = car.HeadlightsOn,
-                    Wheels = car.Wheels
+                    Wheels = car.Wheels,
+                    CreatedDate = car.CreatedDate,
                 }).ToList();
                 return new ApiResponse<List<CarResponse>>(true, ResultCode.Instance.Ok, "Success", carResponseList);
             }
@@ -155,7 +156,8 @@ namespace VehiclesControl.Application.Car
                     Color = result.Color,
                     HeadlightsOn = result.HeadlightsOn,
                     Wheels = result.Wheels,
-                    Id = result.Id
+                    Id = result.Id,
+                    CreatedDate = result.CreatedDate
                 };
                 return new ApiResponse<CarResponse>(true, ResultCode.Instance.Ok, "Success", mappedCar);
             }
@@ -193,18 +195,29 @@ namespace VehiclesControl.Application.Car
         {
             try
             {
-                var newCar = new Domain.Entities.Car
+                var car = await GetCarWithDapper(carInput.Id.GetValueOrDefault());
+                if (car.Data is not null)
                 {
-                    UpdatedDate = DateTime.Now,
-                    Color = carInput.Color,
-                    HeadlightsOn = carInput.HeadlightsOn,
-                    Id = carInput.Id.GetValueOrDefault(),
-                    Wheels = carInput.Wheels
-                };
-                var updated = await _carRepositoryDapper.UpdateAsync(newCar);
-                if (updated)
-                    return new ApiResponse<bool>(true, ResultCode.Instance.Ok, "Success", updated);
-                return new ApiResponse<bool>(false, ResultCode.Instance.Failed, "ErrorOccured",false);
+                    var newCar = new Domain.Entities.Car
+                    {
+                        UpdatedDate = DateTime.Now,
+                        Color = carInput.Color,
+                        HeadlightsOn = carInput.HeadlightsOn,
+                        Id = carInput.Id.GetValueOrDefault(),
+                        Wheels = carInput.Wheels,
+                        CreatedDate = car.Data.CreatedDate,
+                    };
+                    var updated = await _carRepositoryDapper.UpdateAsync(newCar);
+                    if (updated)
+                        return new ApiResponse<bool>(true, ResultCode.Instance.Ok, "Success", updated);
+                    return new ApiResponse<bool>(false, ResultCode.Instance.Failed, "ErrorOccured", false);
+                }
+                else
+                {
+                    return new ApiResponse<bool>(false, ResultCode.Instance.NotFound, "NotFound", false);
+                }
+
+                
             }
             catch (Exception ex)
             {

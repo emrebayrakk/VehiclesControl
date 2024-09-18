@@ -24,6 +24,8 @@ namespace VehiclesControl.Infrastructure.Configurations
         {
             services.AddMemoryCache();
 
+            services.Configure<ContextOption>(configuration.GetSection("ConnectionStrings"));
+
             services.AddScoped<IUserRepo, UserRepo>();
             services.AddScoped<IUserService, UserService>();
 

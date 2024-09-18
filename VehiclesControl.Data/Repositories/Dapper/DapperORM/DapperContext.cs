@@ -6,9 +6,16 @@ namespace VehiclesControl.Data.Repositories.Dapper.DapperORM
 {
     public class DapperContext : IDapperContext
     {
+        private readonly ContextOption _contextOption;
+
+        public DapperContext(IOptions<ContextOption> contextOption)
+        {
+            _contextOption = contextOption.Value;
+        }
+
         public SqlConnection CreateConnection()
         {
-            return new SqlConnection("Data Source=DESKTOP-P87BUPQ;Initial Catalog=VehiclesControl;Integrated Security=True;Connect Timeout=30;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False");
+            return new SqlConnection(_contextOption.DefaultConnection);
         }
     }
 }

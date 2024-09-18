@@ -1,26 +1,42 @@
 ﻿@using VehiclesControl.Domain.Outs
-
 @inject ISnackbar Snackbar
 
-<MudDialog>
+<MudDialog MaxWidth="MaxWidth.Small">
     <TitleContent>
-        <MudText Typo="Typo.h6">
-            <div>
-                <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Class="mr-3 mb-n1" />
-                <MudIcon Icon="@Icons.Material.Filled.Update" Class="mr-3 mb-n1" />
-            </div>
-            Delete car or Update?
+        <MudText Typo="Typo.h5" Align="Align.Center">
+            <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Color="Color.Error" Class="mr-2" />
+            <MudIcon Icon="@Icons.Material.Filled.Update" Color="Color.Primary" />
+            <span class="ml-2">Delete or Update Car?</span>
         </MudText>
     </TitleContent>
+
     <DialogContent>
-        <MudTextField @bind-Value="@Car.Id" Label="Car ID" ReadOnly="true" />
-        <MudTextField @bind-Value="@Car.Wheels" Label="Car Wheels" ReadOnly="false" />
-        <MudTextField @bind-Value="@Car.HeadlightsOn" Label="Car HeadlightsOn" ReadOnly="false" />
-        <MudSwitch @bind-Value="@Car.HeadlightsOn" Color="Color.Secondary" />
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle1" GutterBottom="true">Car Details</MudText>
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="@Car.Id" Label="Car ID" ReadOnly="true" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="@Car.Wheels" Label="Car Wheels" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="@Car.HeadlightsOn" Label="Headlights On" ReadOnly="true" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudSwitch @bind-Value="@Car.HeadlightsOn" Color="Color.Secondary" Label="Toggle Headlights" />
+            </MudItem>
+        </MudGrid>
     </DialogContent>
+
     <DialogActions>
-        <MudButton Color="Color.Primary" OnClick="UpdateCar">Update</MudButton>
-        <MudButton Color="Color.Error" OnClick="DeleteCar">Delete</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="UpdateCar">
+            <MudIcon Icon="@Icons.Material.Filled.Update" Class="mr-1" /> Update
+        </MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Outlined" OnClick="DeleteCar">
+            <MudIcon Icon="@Icons.Material.Filled.Delete" Class="mr-1" /> Delete
+        </MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -34,7 +50,7 @@
     private void UpdateCar()
     {
         MudDialog.Close(DialogResult.Ok(Car));
-    } 
+    }
 
     private void DeleteCar()
     {

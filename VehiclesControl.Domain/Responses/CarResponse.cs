@@ -12,5 +12,6 @@ namespace VehiclesControl.Domain.Outs
         public string Color { get; set; } = string.Empty;
         public bool HeadlightsOn { get; set; }
         public int Wheels { get; set; }
+        public DateTime CreatedDate { get; set; }
     }
 }

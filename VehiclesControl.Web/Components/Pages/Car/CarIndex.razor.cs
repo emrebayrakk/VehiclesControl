@@ -83,6 +83,8 @@ namespace VehiclesControl.Web.Components.Pages.Car
                 Color = item.Color,
                 HeadlightsOn = item.HeadlightsOn,
                 Wheels = item.Wheels,
+                UpdatedDate = DateTime.Now,
+                CreatedDate = CarResponse.CreatedDate
             };
             var res = await ApiRequest.PutAsync<ApiResponse<long>,Domain.Entities.Car>("/api/v1/Cars/with-dapper-updated", mappedCar);
             if (res != null && res.Data != null && res.Data != -1)
