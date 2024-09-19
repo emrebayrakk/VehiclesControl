@@ -2,6 +2,9 @@
 @using VehiclesControl.Domain.Outs
 @rendermode InteractiveServer
 
+<div class="mb-3">
+    <MudTextField @bind-Value="SearchString" Placeholder="Search..." Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" />
+</div>
 
 @if (CarResponses == null)
 {
@@ -11,31 +14,21 @@
 }
 else
 {
-    @* <MudDataGrid T="CarResponse"Items="@CarResponses" ReadOnly="@_readOnly" EditMode="@(_isCellEditMode ? DataGridEditMode.Cell : DataGridEditMode.Form)"
-                 StartedEditingItem="@StartedEditingItem" CanceledEditingItem="@CanceledEditingItem" CommittedItemChanges="@CommittedItemChanges"
-                 Bordered="true" Dense="true" EditTrigger="@(_editTriggerRowClick ? DataGridEditTrigger.OnRowClick : DataGridEditTrigger.Manual)">
-        <Columns>
-            <PropertyColumn Property="x => x.Id" Title="Id" Editable="false" />
-            <PropertyColumn Property="x => x.Wheels" />
-            <PropertyColumn Property="x => x.Color" />
-            <PropertyColumn Property="x => x.HeadlightsOn" />
-            <TemplateColumn Hidden="@(_isCellEditMode || _readOnly || _editTriggerRowClick)" CellClass="d-flex justify-end">
-                <CellTemplate>
-                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Outlined.Edit" OnClick="@context.Actions.StartEditingItemAsync" />
-                </CellTemplate>
-            </TemplateColumn>
-        </Columns>
-    </MudDataGrid>
-    <div class="d-flex flex-column align-center">
-        <MudPagination SelectedChanged="PageChanged" Rectangular="true" Variant="Variant.Filled" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="my-4" />
-    </div> *@
-
-    <MudTable @ref="@_table" Items="@CarResponses" RowsPerPage="10" Hover="true" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info">
+    <MudTable @ref="@_table" Items="@FilteredCars" RowsPerPage="10" Hover="true" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info">
         <HeaderContent>
-            <MudTh>Id</MudTh>
-            <MudTh>Wheels</MudTh>
-            <MudTh>Color</MudTh>
-            <MudTh>HeadlightsOn</MudTh>
+            <MudTh>
+                <MudTextField @bind-Value="IdFilter" Placeholder="Id Filter" />
+                Id
+            </MudTh>
+            <MudTh>
+                <MudTextField @bind-Value="WheelsFilter" Placeholder="Wheels Filter" />
+                Wheels
+            </MudTh>
+            <MudTh>
+                <MudTextField @bind-Value="ColorFilter" Placeholder="Color Filter" />
+                Color
+            </MudTh>
+            <MudTh>Headlights On</MudTh>
             <MudTh Class="small">Actions</MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -54,6 +47,5 @@ else
                 <MudPagination ShowFirstButton="true" ShowLastButton="true" SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="mt-3 mb-3" />
             </div>
         </PagerContent>
-    </MudTable> 
+    </MudTable>
 }
-

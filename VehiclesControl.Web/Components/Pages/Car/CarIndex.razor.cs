@@ -1,36 +1,23 @@
 ﻿using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Hosting.Server;
 using MudBlazor;
-using System.Net.Http;
-using System.Xml.Linq;
-using VehiclesControl.Domain.Entities;
 using VehiclesControl.Domain.Outs;
-using static MudBlazor.CategoryTypes;
 
 namespace VehiclesControl.Web.Components.Pages.Car
 {
     public partial class CarIndex
     {
-        [Inject]
-        public ApiRequest ApiRequest { get; set; }
-
-        [Inject]
-        private NavigationManager NavigationManager { get; set; }
+        [Inject] public ApiRequest ApiRequest { get; set; }
+        [Inject] private NavigationManager NavigationManager { get; set; }
+        [Inject] public ISnackbar Snackbar { get; set; }
+        [Inject] private IDialogService DialogService { get; set; }
 
         private IEnumerable<CarResponse> CarResponses { get; set; }
-
-        [Inject]
-        public ISnackbar Snackbar { get; set; }
-
-        private bool _readOnly { get; set; }
-        private bool _isCellEditMode { get; set; }
-        private List<string> _events { get; set; } = new();
-        private bool _editTriggerRowClick { get; set; }
-
         private MudTable<CarResponse> _table { get; set; }
-
-        [Inject] private IDialogService DialogService { get; set; }
         private CarResponse CarResponse { get; set; }
+        private string SearchString { get; set; } = string.Empty;
+        private string IdFilter { get; set; }
+        private string WheelsFilter { get; set; }
+        private string ColorFilter { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
@@ -49,15 +36,14 @@ namespace VehiclesControl.Web.Components.Pages.Car
         {
             _table.NavigateTo(i - 1);
         }
-        void StartedEditingItem(CarResponse item)
-        {
-            
-        }
 
-        void CanceledEditingItem(CarResponse item)
-        {
-            
-        }
+         private IEnumerable<CarResponse> FilteredCars => CarResponses?
+            .Where(x => string.IsNullOrWhiteSpace(SearchString) || x.Id.ToString().Contains(SearchString, StringComparison.OrdinalIgnoreCase)
+                        || x.Wheels.ToString().Contains(SearchString, StringComparison.OrdinalIgnoreCase)
+                        || x.Color.Contains(SearchString, StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrWhiteSpace(IdFilter) || x.Id.ToString().Contains(IdFilter, StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrWhiteSpace(WheelsFilter) || x.Wheels.ToString().Contains(WheelsFilter, StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrWhiteSpace(ColorFilter) || x.Color.Contains(ColorFilter, StringComparison.OrdinalIgnoreCase));
 
         async void CommittedItemChanges(CarResponse item)
         {
