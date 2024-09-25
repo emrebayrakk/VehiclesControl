@@ -30,6 +30,7 @@ namespace VehiclesControl.Web.Components.Pages.Car
             if (res != null && res.Data != null)
             {
                 CarResponses = res.Data;
+                StateHasChanged();
             }
         }
         private void PageChanged(int i)

@@ -17,7 +17,7 @@
 <MudLayout>
     <MudAppBar style="background-color:#ccccff; color:black;">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Dark" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <span style="margin-left:850px;">My Application</span>
+        <span style="margin-left:850px;">@DateTime.Now.ToString("d")</span>
     </MudAppBar>
     <MudDrawer @bind-Open="@_drawerOpen" style="background-color:#ccccff">
         <NavMenu/>
