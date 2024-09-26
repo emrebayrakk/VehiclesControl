@@ -1,10 +1,9 @@
 ﻿@inherits LayoutComponentBase
 
 
-<MudThemeProvider />
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
 <MudPopoverProvider />
 <MudSnackbarProvider />
-
 <MudDialogProvider FullWidth="true"
                    MaxWidth="MaxWidth.ExtraSmall"
                    CloseButton="true"
@@ -15,12 +14,13 @@
                    BackgroundClass="my-custom-class" />
 
 <MudLayout>
-    <MudAppBar style="background-color:#ccccff; color:black;">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Dark" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <span style="margin-left:850px;">@DateTime.Now.ToString("d")</span>
+    <MudAppBar>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudText style="margin-left:850px;">@DateTime.Now.ToString("d")</MudText>
     </MudAppBar>
-    <MudDrawer @bind-Open="@_drawerOpen" style="background-color:#ccccff">
+    <MudDrawer @bind-Open="@_drawerOpen">
         <NavMenu/>
+        <MudSwitch @bind-Value="_isDarkMode" Color="Color.Primary" Class="ma-4" T="bool" Label="Toggle Light/Dark Mode" />
     </MudDrawer>
     <MudMainContent>
         <div style="margin-left:20px; margin-top:20px; margin-right:20px;">
@@ -38,7 +38,8 @@
 
 @code {
     bool _drawerOpen = true;
-
+    private MudTheme _theme = new();
+    private bool _isDarkMode = true;
     void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;

@@ -51,12 +51,12 @@ namespace VehiclesControl.Web.Components.Pages.Car
             var res = await UpdateCar(item);
             if (res)
             {
-                Snackbar.Add($"Edited Car Id: {item.Id}", Severity.Success);
+                Snackbar.Add($"Edited Car Id: {item.Id}", Severity.Success, c => c.SnackbarVariant = Variant.Text);
                 await LoadCars();
             }
             else
             {
-                Snackbar.Add($"Error! Not Edited Car Id: {item.Id}", Severity.Error);
+                Snackbar.Add($"Error! Not Edited Car Id: {item.Id}", Severity.Error, c => c.SnackbarVariant = Variant.Text);
                 await LoadCars();
             }
             
@@ -117,13 +117,13 @@ namespace VehiclesControl.Web.Components.Pages.Car
                     if (res)
                     {
                         await LoadCars();
-                        Snackbar.Add("Car Deleted", Severity.Error);
+                        Snackbar.Add("Car Deleted", Severity.Error, c => c.SnackbarVariant = Variant.Text);
                     }
                 }
             }
             else
             {
-                Snackbar.Add("Error!", Severity.Error);
+                Snackbar.Add("Error!", Severity.Error, c => c.SnackbarVariant = Variant.Text);
             }
         }
     }
