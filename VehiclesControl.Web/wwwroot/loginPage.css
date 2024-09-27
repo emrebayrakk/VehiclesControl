@@ -1,0 +1,37 @@
+﻿.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Tüm ekran yüksekliği */
+    padding: 16px; /* Kenarlarda ekstra boşluk */
+}
+
+.pa-6 {
+    padding: 32px; /* Paper içindeki boşluk arttırıldı */
+}
+
+.big-input {
+    font-size: 1.2rem; /* Input yazı boyutunu büyütür */
+    height: 3rem; /* Input yüksekliği artırıldı */
+    width: 100%; /* Inputlar tam genişlikte olsun */
+}
+
+.big-button {
+    font-size: 1.1rem; /* Buton yazı boyutunu büyütür */
+    height: 3rem; /* Buton yüksekliği artırıldı */
+    width: 50%; /* Buton tam genişlikte olsun */
+}
+
+.mb-4 {
+    margin-bottom: 16px; /* Inputlar arasındaki boşluğu artırır */
+}
+
+.mt-6 {
+    margin-top: 54px; /* Checkbox ve buton arasındaki boşluğu artırır */
+}
+
+@media (max-width: 768px) {
+    .login-container {
+        padding: 16px;
+    }
+}

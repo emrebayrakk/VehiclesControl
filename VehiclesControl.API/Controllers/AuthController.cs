@@ -4,6 +4,7 @@ using VehiclesControl.Application.User;
 using VehiclesControl.Domain.Input;
 using VehiclesControl.Domain.Inputs;
 using VehiclesControl.Domain.Outs;
+using VehiclesControl.Domain.Responses;
 
 namespace VehiclesControl.API.Controllers
 {
@@ -24,10 +25,10 @@ namespace VehiclesControl.API.Controllers
         #endregion
 
 
-        [HttpPost]
+        [HttpPost("Login")]
         [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status404NotFound)]
-        public ApiResponse<string> Create([FromBody] UserLoginRequest user)
+        public ApiResponse<LoginResponse> Create([FromBody] UserLoginRequest user)
         {
             var response = _userService.Login(user);
             return response;

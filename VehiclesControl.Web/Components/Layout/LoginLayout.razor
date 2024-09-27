@@ -1,0 +1,26 @@
+﻿@inherits LayoutComponentBase
+
+
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
+<MudPopoverProvider />
+<MudSnackbarProvider />
+<MudDialogProvider FullWidth="true"
+                   MaxWidth="MaxWidth.ExtraSmall"
+                   CloseButton="true"
+                   BackdropClick="false"
+                   NoHeader="true"
+                   Position="DialogPosition.Center"
+                   CloseOnEscapeKey="true"
+                   BackgroundClass="my-custom-class" />
+
+<MudLayout>
+    <MudMainContent class="login-container">
+          @Body
+    </MudMainContent>
+</MudLayout>
+
+
+@code {
+    private MudTheme _theme = new();
+    private bool _isDarkMode = true;
+}

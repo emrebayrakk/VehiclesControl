@@ -2,6 +2,7 @@
 using VehiclesControl.Domain.Inputs;
 using VehiclesControl.Domain.Interfaces.EntityFramework;
 using VehiclesControl.Domain.Outs;
+using VehiclesControl.Domain.Responses;
 
 namespace VehiclesControl.Application.User
 {
@@ -30,15 +31,27 @@ namespace VehiclesControl.Application.User
             return new ApiResponse<UserResponse>(true, ResultCode.Instance.Ok,"Success", result);
         }
 
-        public ApiResponse<string> Login(UserLoginRequest login)
+        public ApiResponse<LoginResponse> Login(UserLoginRequest login)
         {
             var result = _userRepo.FirstOrDefault(a => a.Email == login.Email && a.Password == login.Password);
             if (result is not null)
             {
                 var token = _jwtProvider.CreateToken(result);
-                return new ApiResponse<string>(true, ResultCode.Instance.Ok, "Success", token);
+                LoginResponse response = new LoginResponse
+                {
+                    User = new UserResponse
+                    {
+                        Email = result.Email,
+                        FirstName = result.FirstName,
+                        LastName = result.LastName,
+                        Id = result.Id,
+                        Password = result.Password,
+                    },
+                    Token = token
+                };
+                return new ApiResponse<LoginResponse>(true, ResultCode.Instance.Ok, "Success", response);
             }  
-            return new ApiResponse<string>(false, ResultCode.Instance.LoginInvalid, "LoginInvalid", "");
+            return new ApiResponse<LoginResponse>(false, ResultCode.Instance.LoginInvalid, "LoginInvalid", null);
 
         }
 

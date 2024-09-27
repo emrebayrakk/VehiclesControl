@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using VehiclesControl.Domain.Input;
 using VehiclesControl.Domain.Inputs;
 using VehiclesControl.Domain.Outs;
+using VehiclesControl.Domain.Responses;
 
 namespace VehiclesControl.Application.User
 {
@@ -14,6 +15,6 @@ namespace VehiclesControl.Application.User
         ApiResponse<long> Create(UserRequest userInput);
         ApiResponse<List<UserResponse>> UserList();
         ApiResponse<UserResponse> GetUser(long id);
-        ApiResponse<string> Login(UserLoginRequest login);
+        ApiResponse<LoginResponse> Login(UserLoginRequest login);
     }
 }
