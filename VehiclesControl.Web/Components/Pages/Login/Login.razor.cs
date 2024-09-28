@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.Identity.Data;
 using MudBlazor;
 using System.Text.RegularExpressions;
@@ -22,6 +23,7 @@ namespace VehiclesControl.Web.Components.Pages.Login
         string[] errors { get; set; } = { };
         MudTextField<string> pwField1 { get; set; }
         MudForm form { get; set; }
+        [Inject] ProtectedLocalStorage localStorage { get; set; }
 
         private IEnumerable<string> PasswordStrength(string pw)
         {
@@ -38,6 +40,15 @@ namespace VehiclesControl.Web.Components.Pages.Login
                 yield return "Password must contain at least one lowercase letter";
             if (!Regex.IsMatch(pw, @"[0-9]"))
                 yield return "Password must contain at least one digit";
+        }
+        protected override async Task OnInitializedAsync()
+        {
+            LoginUserAbout loginUser = new LoginUserAbout(localStorage);
+            var checkLogin = await loginUser.AnyToken();
+            if (checkLogin)
+            {
+                NavigationManager.NavigateTo("/");
+            }
         }
 
         private string PasswordMatch(string arg)

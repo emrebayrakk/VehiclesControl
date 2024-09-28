@@ -14,5 +14,14 @@ namespace VehiclesControl.Web.Authentication
             }
             return null;
         }
+        public async Task<bool> AnyToken()
+        {
+            var token = (await localStorage.GetAsync<string>("token")).Value;
+            if (token != null)
+            {
+                return true;
+            }
+            return false;
+        }
     }
 }
