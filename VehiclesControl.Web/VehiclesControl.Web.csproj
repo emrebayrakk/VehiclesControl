@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Components\Layout\MudRedirect.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MudBlazor" Version="7.8.0" />
     <PackageReference Include="MudBlazor.ThemeManager" Version="2.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
@@ -14,6 +18,18 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VehiclesControl.Domain\VehiclesControl.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Components\Layout\MudRedirect.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Components\Layout\MudRedirect.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Components\Layout\MudRedirect.razor" />
   </ItemGroup>
 
 </Project>

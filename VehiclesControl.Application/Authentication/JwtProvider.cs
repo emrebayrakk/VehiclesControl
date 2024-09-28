@@ -20,6 +20,7 @@ namespace VehiclesControl.Application.Authentication
         public string CreateToken(Domain.Entities.User user)
         {
             var claims = new Claim[]{
+                new Claim(ClaimTypes.Name,$"{user.FirstName} {user.LastName}"),
                 new Claim(JwtRegisteredClaimNames.Sub, user.FirstName),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(ClaimTypes.Authentication, ""+user.Id+""),

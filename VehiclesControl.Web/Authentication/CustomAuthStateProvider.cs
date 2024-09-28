@@ -11,6 +11,7 @@ namespace VehiclesControl.Web.Authentication
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
             var token = (await localStorage.GetAsync<string>("token")).Value;
+            var usr = (await localStorage.GetAsync<UserResponse>("user")).Value;
             var identity = string.IsNullOrEmpty(token) ? new ClaimsIdentity() : GetClaimsIdentity(token);
             var user = new ClaimsPrincipal(identity);
             return new AuthenticationState(user);
@@ -34,6 +35,7 @@ namespace VehiclesControl.Web.Authentication
         public async Task MarkUserAsLoggedOut()
         {
             await localStorage.DeleteAsync("token");
+            await localStorage.DeleteAsync("user");
             var identity = new ClaimsIdentity();
             var user = new ClaimsPrincipal(identity);
             NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(user)));

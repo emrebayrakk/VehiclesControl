@@ -13,7 +13,7 @@ namespace VehiclesControl.Web.Components.Pages.Login
     public partial class Login
     {
         [Inject] public ApiRequest ApiRequest { get; set; }
-        [Inject] private NavigationManager NavigationManager { get; set; }
+        [Inject] public NavigationManager NavigationManager { get; set; }
         [Inject] public ISnackbar Snackbar { get; set; }
         [Inject] public AuthenticationStateProvider AuthStateProvider { get; set; }
 
@@ -51,8 +51,8 @@ namespace VehiclesControl.Web.Components.Pages.Login
             var res = await ApiRequest.PostAsync<ApiResponse<LoginResponse>, UserLoginRequest>("/api/v1/Auth/Login", LoginUser);
             if (res != null && res.Data != null)
             {
-                await ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsAuthenticated(res.Data.Token);
-                NavigationManager.NavigateTo("/");
+                await ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsAuthenticated(res.Data.Token,res.Data.User);
+                NavigationManager.NavigateTo("/cars", true);
             }
         }
     }

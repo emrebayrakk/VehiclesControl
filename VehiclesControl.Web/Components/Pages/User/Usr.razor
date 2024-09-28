@@ -1,0 +1,28 @@
+﻿@page "/usr"
+@rendermode InteractiveServer
+
+<EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <MudGrid>
+        <MudItem xs="12" sm="7">
+            <MudCard>
+                <MudCardContent>
+                    <MudTextField Disabled Label="Id" Adornment="Adornment.End" Variant="Variant.Filled" Class="mt-3"
+                                  @bind-Value="model.Id" For="@(() => model.Id)" />
+                    <MudTextField Label="Email" Adornment="Adornment.End" Variant="Variant.Filled" Class="mt-3"
+                                  @bind-Value="model.Email" For="@(() => model.Email)" />
+                    <MudTextField Label="First name" Adornment="Adornment.End" Variant="Variant.Filled" 
+                                  @bind-Value="model.FirstName" For="@(() => model.FirstName)" />
+                    <MudTextField Label="First name" Adornment="Adornment.End" Variant="Variant.Filled" 
+                                  @bind-Value="model.LastName" For="@(() => model.LastName)" />
+                    <MudTextField @bind-Value="model.Password" Label="Password" Variant="Variant.Filled" InputType="@PasswordInput" Adornment="Adornment.End" 
+                                  AdornmentIcon="@PasswordInputIcon" OnAdornmentClick="ButtonTestclick" AdornmentAriaLabel="Show Password" />
+                    
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Update</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</EditForm>

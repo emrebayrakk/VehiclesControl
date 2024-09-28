@@ -1,5 +1,5 @@
 ﻿@inherits LayoutComponentBase
-
+@inject NavigationManager NavigationManager
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
 <MudPopoverProvider />
@@ -13,21 +13,40 @@
                    CloseOnEscapeKey="true"
                    BackgroundClass="my-custom-class" />
 
-<MudLayout>
-    <MudAppBar Class="z-0">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <MudText style="margin-left:850px;">@DateTime.Now.ToString("d")</MudText>
-    </MudAppBar>
-    <MudDrawer @bind-Open="@_drawerOpen">
-        <NavMenu/>
-        <MudSwitch @bind-Value="_isDarkMode" Color="Color.Primary" Class="ma-4" T="bool" Label="Toggle Light/Dark Mode" />
-    </MudDrawer>
-    <MudMainContent>
-        <div style="margin-left:20px; margin-top:20px; margin-right:20px;">
-        @Body
+<AuthorizeView>
+    <Authorized>
+        <MudLayout>
+            <MudAppBar Class="z-0">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+                <MudText style="margin-left:850px;">Hello, @context.User.Identity?.Name</MudText>
+            </MudAppBar>
+            <MudDrawer @bind-Open="@_drawerOpen">
+                <NavMenu />
+                <MudSwitch @bind-Value="_isDarkMode" Color="Color.Primary" Class="ma-4" T="bool" Label="Toggle Light/Dark Mode" />
+            </MudDrawer>
+            <MudMainContent>
+                <div style="margin-left:20px; margin-top:20px; margin-right:20px;">
+                    @Body
+                </div>
+            </MudMainContent>
+        </MudLayout>
+    </Authorized>
+    <NotAuthorized>
+        <div style="position: relative; height: 100vh; display: flex; align-items: center; justify-content: center; background-image: url('/notfound.jpg'); background-size: cover; background-position: center;">
+            <MudPaper Class="pa-6 text-center" Style="background-color:black; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); max-width: 500px;">
+                <MudText Typo="Typo.h3" GutterBottom="true" Class="mb-4">Yetkiniz Yoktur!</MudText>
+                <MudText Typo="Typo.body1" GutterBottom="true">
+                    Aradığınız sayfa için yetkiniz yoktur. Giriş yapmak için aşağıdaki butona tıklayın.
+                </MudText>
+                <MudIcon Icon="Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Large" Class="my-4" />
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo("/login"))">
+                    Giriş Yap
+                </MudButton>
+            </MudPaper>
         </div>
-    </MudMainContent>
-</MudLayout>
+    </NotAuthorized>
+</AuthorizeView>
+
 
 
 <style>

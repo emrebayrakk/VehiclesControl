@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
 using MudBlazor.Services;
 using VehiclesControl.Web;
+using VehiclesControl.Web.Authentication;
 using VehiclesControl.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +10,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddServerSideBlazor()
+    .AddCircuitOptions(options => { options.DetailedErrors = true; });
+
+
+builder.Services.AddAuthentication();
 
 builder.Services.AddMudServices(config =>
 {
@@ -44,6 +53,9 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
