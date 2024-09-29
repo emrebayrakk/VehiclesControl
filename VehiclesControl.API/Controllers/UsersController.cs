@@ -33,6 +33,14 @@ namespace VehiclesControl.API.Controllers
         }
 
         [Authorize]
+        [HttpPut("Update")]
+        [ProducesResponseType(typeof(ApiResponse<Domain.Entities.User>), StatusCodes.Status200OK)]
+        public ApiResponse<Domain.Entities.User> UserUpdate([FromBody] UserRequest user)
+        {
+            return _userService.Update(user);
+        }
+
+        [Authorize]
         [HttpGet("Get")]
         [ProducesResponseType(typeof(ApiResponse<UserResponse>), StatusCodes.Status200OK)]
         public ApiResponse<UserResponse> GetUser(long id)

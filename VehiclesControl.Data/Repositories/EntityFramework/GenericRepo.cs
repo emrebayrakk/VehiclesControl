@@ -180,5 +180,29 @@ namespace VehiclesControl.Data.Repositories.EntityFramework
             }
 
         }
+
+        public TEntity UpdateEntity(TEntityInput entity)
+        {
+            try
+            {
+                var mappedEntity = _mapper.Map<TEntity>(entity);
+
+                this.entity.Attach(mappedEntity);
+                dbContext.Entry(mappedEntity).State = EntityState.Modified;
+
+                var res = dbContext.SaveChanges();
+                if (res != -1)
+                {
+                    return mappedEntity;
+                }
+                return null;
+                
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+        }
     }
 }

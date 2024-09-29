@@ -65,5 +65,10 @@ namespace VehiclesControl.Data.Repositories.CachedRepositories
         {
             return _carRepo.Update(entity);
         }
+
+        public Car UpdateEntity(CarRequest entity)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

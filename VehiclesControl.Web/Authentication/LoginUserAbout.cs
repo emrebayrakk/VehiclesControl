@@ -14,6 +14,14 @@ namespace VehiclesControl.Web.Authentication
             }
             return null;
         }
+        public async Task DeleteUserStorage()
+        {
+            await localStorage.DeleteAsync("user");
+        }
+        public async Task SetUserStorage(UserResponse data)
+        {
+            await localStorage.SetAsync("user", data);
+        }
         public async Task<bool> AnyToken()
         {
             var token = (await localStorage.GetAsync<string>("token")).Value;

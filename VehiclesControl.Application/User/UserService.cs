@@ -60,5 +60,13 @@ namespace VehiclesControl.Application.User
             var result = _userRepo.GetAll();
             return new ApiResponse<List<UserResponse>>(true, ResultCode.Instance.Ok, "Success", result);
         }
+
+        public ApiResponse<Domain.Entities.User> Update(UserRequest userInput)
+        {
+            var res = _userRepo.UpdateEntity(userInput);
+            if (res != null)
+                return new ApiResponse<Domain.Entities.User>(true, ResultCode.Instance.Ok, "Success", res);
+            return new ApiResponse<Domain.Entities.User>(false, ResultCode.Instance.Failed, "ErrorOccured", null);
+        }
     }
 }
