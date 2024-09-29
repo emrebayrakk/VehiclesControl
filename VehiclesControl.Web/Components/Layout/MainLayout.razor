@@ -32,28 +32,35 @@
         </MudLayout>
     </Authorized>
     <NotAuthorized>
-        <div style="position: relative; height: 100vh; display: flex; align-items: center; justify-content: center; background-image: url('/notfound.jpg'); background-size: cover; background-position: center;">
-            <MudPaper Class="pa-6 text-center" Style="background-color:black; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); max-width: 500px;">
-                <MudText Typo="Typo.h3" GutterBottom="true" Class="mb-4">Yetkiniz Yoktur!</MudText>
-                <MudText Typo="Typo.body1" GutterBottom="true">
+        <div style="position: relative; height: 100vh; display: flex; align-items: center; justify-content: center; background-image: url('/notfound2.jpg'); background-size: cover; background-position: center; filter: blur(0.5px) brightness(0.9);">
+            <MudPaper Class="pa-6 text-center" Style="background-color: rgba(0, 0, 0, 0.7); border-radius: 12px; box-shadow: 0 10px 17px rgba(0, 0, 0, 0.3); max-width: 500px; transition: transform 0.2s;">
+                <MudText Typo="Typo.h4" GutterBottom="true" Class="mb-4" Style="color: #ffffff; font-weight: 600;">
+                    Yetkiniz Yoktur!
+                </MudText>
+                <MudText Typo="Typo.body1" GutterBottom="true" Style="color: #cccccc; font-size: 1rem;">
                     Aradığınız sayfa için yetkiniz yoktur. Giriş yapmak için aşağıdaki butona tıklayın.
                 </MudText>
-                <MudIcon Icon="Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Large" Class="my-4" />
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo("/login"))">
-                    Giriş Yap
-                </MudButton>
+                <MudIcon Icon="Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Large" Class="my-3" />
+                <div style="display: flex; justify-content: center;">
+                    <MudButton Variant="Variant.Filled" OnClick="@(() => NavigationManager.NavigateTo("/login"))"
+                               style="
+                                background: linear-gradient(135deg, #6a11cb, #2575fc);
+                                color: white;
+                                padding: 12px 25px;
+                                font-size: 1rem;
+                                border-radius: 30px;
+                                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+                                transition: all 0.3s ease;
+                                font-weight: 600;
+                                letter-spacing: 0.5px;">
+                        Giriş Yap
+                    </MudButton>
+                </div>
             </MudPaper>
         </div>
     </NotAuthorized>
 </AuthorizeView>
 
-
-
-<style>
-    .my-custom-class {
-        backdrop-filter: blur(10px);
-    }
-</style>
 
 @code {
     bool _drawerOpen = true;

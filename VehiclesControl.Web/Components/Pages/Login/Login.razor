@@ -2,24 +2,26 @@
 
 @layout Layout.LoginLayout
 
-    <MudGrid Justify="Justify.Center">
-        <MudItem xs="12" sm="8" md="6" lg="5">
-            <MudPaper Class="pa-6" Elevation="4">
-                <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+<MudGrid Justify="Justify.Center" AlignItems="Center" Style="min-height: 100vh;">
+    <MudItem xs="12" sm="8" md="6" lg="5">
+        <MudText Typo="Typo.h4" Align="Align.Center" GutterBottom="true">Login</MudText>
+        <MudPaper Class="pa-6" Elevation="4">
+            <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
                 <MudTextField T="string" @bind-Value="LoginUser.Email" Label="Email" FullWidth="true" Required="true" RequiredError="Email is required!"
-                                  Validation="@(new EmailAddressAttribute() {ErrorMessage = "The email address is invalid"})" />
+                              Validation="@(new EmailAddressAttribute() {ErrorMessage = "The email address is invalid"})" />
                 <MudTextField T="string" @bind-Value="LoginUser.Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" FullWidth="true"
-                                  InputType="InputType.Password"
-                                  Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" Required="true"
-                                  RequiredError="Password is required!" />
-                    <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" FullWidth="true"
-                                  InputType="InputType.Password"
-                                  Validation="@(new Func<string, string>(PasswordMatch))" />
-                    <div class="d-flex align-center justify-space-between mt-6">
+                              InputType="InputType.Password"
+                              Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" Required="true"
+                              RequiredError="Password is required!" />
+                <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" FullWidth="true"
+                              InputType="InputType.Password"
+                              Validation="@(new Func<string, string>(PasswordMatch))" />
+                <div class="d-flex align-center justify-space-between mt-6">
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" OnClick="() => { LoginSubmit(); }" Class="ml-auto">Login</MudButton>
-                    </div>
-                </MudForm>
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
+                </div>
+            </MudForm>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
 
