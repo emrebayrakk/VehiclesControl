@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Car.API", "Car.API\Car.API.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VehiclesControl.Web", "VehiclesControl.Web\VehiclesControl.Web.csproj", "{683066F6-4321-4FC1-8225-EEF265B9718D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VehiclesControl.Hangfire", "VehiclesControl.Hangfire\VehiclesControl.Hangfire.csproj", "{C59813E8-A4B6-4865-A3AE-DA22CE71C44A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{683066F6-4321-4FC1-8225-EEF265B9718D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{683066F6-4321-4FC1-8225-EEF265B9718D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{683066F6-4321-4FC1-8225-EEF265B9718D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C59813E8-A4B6-4865-A3AE-DA22CE71C44A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C59813E8-A4B6-4865-A3AE-DA22CE71C44A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C59813E8-A4B6-4865-A3AE-DA22CE71C44A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C59813E8-A4B6-4865-A3AE-DA22CE71C44A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
