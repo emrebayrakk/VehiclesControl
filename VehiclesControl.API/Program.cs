@@ -1,4 +1,5 @@
 using MassTransit;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using VehiclesControl.API.Middleware;
@@ -20,6 +21,12 @@ builder.Services.AddCors(options =>
         builder => builder.AllowAnyOrigin()
                           .AllowAnyMethod()
                           .AllowAnyHeader());
+});
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
 
 builder.Services.AddMassTransit(conf =>
@@ -74,6 +81,8 @@ app.Use(async (context, next) =>
 
 app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionMiddleware>();
+
+app.UseForwardedHeaders();
 
 app.UseAuthorization();
 
