@@ -2,6 +2,7 @@
 @using MudBlazor
 @inject HttpClient Http
 
+
 <MudContainer MaxWidth="MaxWidth.Medium" Class="pa-10" Style="background-color: #111;">
     <MudText Typo="Typo.h6" Align="Align.Left" Class="text-gradient">
         @message
@@ -15,7 +16,8 @@
                 <MudIcon Icon="@Icons.Material.Filled.Message" Size="Size.Small"></MudIcon><MudText Typo="Typo.body1">@item.Key</MudText>
             </MudPaper>
             <MudPaper Class="pa-5" Style="background-color: #222; color: white;">
-                <MudIcon Icon="@Icons.Material.Filled.Assignment" Size="Size.Small"></MudIcon><MudText Typo="Typo.body1">@item.Value</MudText>
+                <MudIcon Icon="@Icons.Material.Filled.Assignment" Size="Size.Small"></MudIcon>
+                <MudMarkdown Value="@item.Value"></MudMarkdown>
             </MudPaper>
         }
     }
@@ -26,3 +28,8 @@
         Gönder
     </MudButton>
 </MudContainer>
+
+    @code {
+        private MudTheme _theme = new();
+        private bool _isDarkMode = true;
+    }

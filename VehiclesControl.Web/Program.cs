@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
 using MudBlazor.Services;
@@ -16,6 +17,7 @@ builder.Services.AddServerSideBlazor()
     .AddCircuitOptions(options => { options.DetailedErrors = true; });
 
 
+
 builder.Services.AddAuthentication();
 
 builder.Services.AddMudServices(config =>
@@ -31,12 +33,15 @@ builder.Services.AddMudServices(config =>
     config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
 });
 
+builder.Services.AddMudMarkdownServices();
+
 builder.Services.AddHttpClient<ApiRequest>(client =>
 {
     // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
     // Learn more about service discovery scheme resolution at https://aka.ms/dotnet/sdschemes.
     client.BaseAddress = new("https://localhost:44341");
 });
+
 
 var app = builder.Build();
 

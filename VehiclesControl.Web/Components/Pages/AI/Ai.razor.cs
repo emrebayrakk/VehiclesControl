@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Blazored.TextEditor;
+using Newtonsoft.Json.Linq;
 
 namespace VehiclesControl.Web.Components.Pages.AI
 {
@@ -12,6 +13,7 @@ namespace VehiclesControl.Web.Components.Pages.AI
         private Dictionary<string, string> aiChats { get; set; } = new Dictionary<string, string>();
         private async Task SubmitMessageAsync()
         {
+            // TODO Spinner Add
             apiKey = "";
             var path = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={apiKey}";
 
@@ -46,6 +48,7 @@ namespace VehiclesControl.Web.Components.Pages.AI
                 response = "İstek başarısız oldu.";
             }
             aiChats.Add(userMessage, response);
+            userMessage = "";
         }
 
 
