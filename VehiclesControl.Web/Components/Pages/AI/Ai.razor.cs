@@ -11,9 +11,13 @@ namespace VehiclesControl.Web.Components.Pages.AI
         private string apiKey { get; set; } = string.Empty;
         private string aiResponse { get; set; } = string.Empty;
         private Dictionary<string, string> aiChats { get; set; } = new Dictionary<string, string>();
+        private bool activeSpinner { get; set; } = false;
         private async Task SubmitMessageAsync()
         {
-            // TODO Spinner Add
+            activeSpinner = true;
+            var req = userMessage;
+            userMessage = "";
+            //ToDo appsettings.json apikey
             apiKey = "";
             var path = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={apiKey}";
 
@@ -25,7 +29,7 @@ namespace VehiclesControl.Web.Components.Pages.AI
             {
                 parts = new[]
                 {
-                    new { text = userMessage }
+                    new { text = req }
                 }
             }
         }
@@ -47,8 +51,8 @@ namespace VehiclesControl.Web.Components.Pages.AI
             {
                 response = "İstek başarısız oldu.";
             }
-            aiChats.Add(userMessage, response);
-            userMessage = "";
+            aiChats.Add(req, response);
+            activeSpinner = false;
         }
 
 

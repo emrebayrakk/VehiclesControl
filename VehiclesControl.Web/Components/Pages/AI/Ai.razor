@@ -3,8 +3,8 @@
 @inject HttpClient Http
 
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-10" Style="background-color: #111;">
-    <MudText Typo="Typo.h6" Align="Align.Left" Class="text-gradient">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-10" Style="background-color: #1E1E2D; border-radius: 10px; box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.5);">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="text-gradient" Style="color: #FF4081;">
         @message
     </MudText>
 
@@ -12,24 +12,38 @@
     {
         foreach (var item in aiChats)
         {
-            <MudPaper Class="pa-5" Style="background-color: #222; color: white;">
-                <MudIcon Icon="@Icons.Material.Filled.Message" Size="Size.Small"></MudIcon><MudText Typo="Typo.body1">@item.Key</MudText>
+            <MudPaper Class="pa-5 my-2" Style="background-color: #2E2E3D; color: white; border-radius: 8px;">
+                <MudIcon Icon="@Icons.Material.Filled.Message" Size="Size.Small" Style="color: #FF4081;" />
+                <MudText Typo="Typo.body1">@item.Key</MudText>
             </MudPaper>
-            <MudPaper Class="pa-5" Style="background-color: #222; color: white;">
-                <MudIcon Icon="@Icons.Material.Filled.Assignment" Size="Size.Small"></MudIcon>
+            <MudPaper Class="pa-5 my-2" Style="background-color: #2E2E3D; color: white; border-radius: 8px;">
+                <MudIcon Icon="@Icons.Material.Filled.Assignment" Size="Size.Small" Style="color: #3F51B5;" />
                 <MudMarkdown Value="@item.Value"></MudMarkdown>
             </MudPaper>
         }
     }
 
-    <MudTextField @bind-Value="@userMessage" Label="Buraya bir istem girin" Variant="Variant.Filled" FullWidth="true" />
+    <MudTextField @bind-Value="@userMessage" Label="Buraya bir istem girin" Variant="Variant.Filled" FullWidth="true" Style="background-color: #2E2E3D; color: white; border-radius: 8px;" />
+
+    @if (!activeSpinner)
+    {
+        <MudButton 
+            Variant="Variant.Filled" 
+            Color="Color.Primary" 
+            FullWidth="true" 
+            Class="mt-4" 
+            Style="background-color: #3F51B5; color: white; border-radius: 8px;" 
+            EndIcon="@Icons.Material.Filled.Send"
+            OnClick="SubmitMessageAsync">
+            Gönder
+        </MudButton>
+    }
+    else
+    {
+        <MudButton Variant="Variant.Filled" Disabled="true" Color="Color.Primary" FullWidth="true" Class="mt-4" Style="background-color: #3F51B5; color: white; border-radius: 8px;" OnClick="SubmitMessageAsync">
+            <MudProgressCircular Color="Color.Success" Indeterminate="true" />
+        </MudButton>
+    }
     
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4" OnClick="SubmitMessageAsync">
-        Gönder
-    </MudButton>
 </MudContainer>
 
-    @code {
-        private MudTheme _theme = new();
-        private bool _isDarkMode = true;
-    }
