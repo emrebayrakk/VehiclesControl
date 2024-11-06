@@ -1,6 +1,7 @@
 using Car.API.Data;
 using Car.API.Services;
 using MassTransit;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,8 +45,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger(options =>
+    {
+        options.RouteTemplate = "/openapi/{documentName}.json";
+    });
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();

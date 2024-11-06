@@ -1,6 +1,7 @@
 using MassTransit;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 using Serilog;
 using VehiclesControl.API.Middleware;
 using VehiclesControl.Data.Context;
@@ -69,8 +70,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger(options =>
+    {
+        options.RouteTemplate = "/openapi/{documentName}.json";
+    });
+    app.MapScalarApiReference();
 }
 app.Use(async (context, next) =>
 {
