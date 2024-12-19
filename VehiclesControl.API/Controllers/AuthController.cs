@@ -27,8 +27,6 @@ namespace VehiclesControl.API.Controllers
 
 
         [HttpPost("Login")]
-        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status404NotFound)]
         public ApiResponse<LoginResponse> Create([FromBody] UserLoginRequest user)
         {
             var response = _userService.Login(user);

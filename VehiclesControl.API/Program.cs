@@ -1,6 +1,7 @@
 using MassTransit;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
 using Scalar.AspNetCore;
 using Serilog;
 using VehiclesControl.API.Middleware;
@@ -61,6 +62,20 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .CreateLogger();
 
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(x =>
+    {
+        x.AddPrometheusExporter();
+        x.AddMeter(
+            "Microsoft.AspNetCore.Hosting", 
+            "Microsoft.AspNetCore.Server.Kestrel");
+        x.AddView("request-duration",
+            new ExplicitBucketHistogramConfiguration
+            {
+                Boundaries = new[] { 0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.7 }
+            });
+    });
+
 builder.Host.UseSerilog();
 
 
@@ -97,6 +112,9 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<VehiclesControlContext>();
     db.Database.Migrate();
 }
+
+app.MapPrometheusScrapingEndpoint();
+
 app.UseCors("AllowAll");
 
 app.Run();
