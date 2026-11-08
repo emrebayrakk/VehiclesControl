@@ -1,0 +1,198 @@
+@page "/vehicles/new"
+@page "/vehicles/{Id:long}/edit"
+@inject GalleryApi Api
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(IsEdit ? "Aracı düzenle" : "Yeni araç") · Vehicles Control</PageTitle>
+
+<PageHeader Eyebrow="Stok" Title="@(IsEdit ? "Aracı düzenle" : "Yeni araç")" Subtitle="@(IsEdit ? _title : "Aracın bilgilerini, alış maliyetini ve satış fiyatını girin.")">
+    <Actions>
+        <MudButton Variant="Variant.Text" Href="@(IsEdit ? $"/vehicles/{Id}" : "/vehicles")">Vazgeç</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SaveAsync" Disabled="_saving || _loading">
+            @(_saving ? "Kaydediliyor…" : "Kaydet")
+        </MudButton>
+    </Actions>
+</PageHeader>
+
+@if (_loading)
+{
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="420px" Class="rounded-lg" />
+}
+else
+{
+    <MudForm @ref="_form">
+        <MudGrid Spacing="4">
+            <MudItem xs="12" lg="8">
+                <MudPaper Outlined="true" Class="panel mb-4">
+                    <div class="section-title"><MudIcon Icon="@Icons.Material.Rounded.DirectionsCar" Size="Size.Small" /> Araç bilgileri</div>
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudAutocomplete T="string" @bind-Value="_model.Brand" SearchFunc="SearchBrands" Label="Marka" Required="true" RequiredError="Marka zorunludur."
+                                             Variant="Variant.Outlined" CoerceValue="true" MaxItems="40" MaxLength="60" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4"><MudTextField @bind-Value="_model.Model" Label="Model" Required="true" RequiredError="Model zorunludur." Variant="Variant.Outlined" MaxLength="80" /></MudItem>
+                        <MudItem xs="12" md="4"><MudTextField @bind-Value="_model.Trim" Label="Paket / motor" Placeholder="1.6 TDI Highline" Variant="Variant.Outlined" MaxLength="120" /></MudItem>
+                        <MudItem xs="6" md="3"><MudNumericField @bind-Value="_model.Year" Label="Model yılı" Min="1950" Max="@(DateTime.Today.Year + 1)" Variant="Variant.Outlined" /></MudItem>
+                        <MudItem xs="6" md="3">
+                            <MudNumericField @bind-Value="_model.Kilometers" Label="Kilometre" Min="0" Max="2000000" Format="N0" Culture="Format.Turkish" HideSpinButtons="true"
+                                             Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="km" />
+                        </MudItem>
+                        <MudItem xs="6" md="3">
+                            <MudSelect T="FuelType" @bind-Value="_model.FuelType" Label="Yakıt" Variant="Variant.Outlined">
+                                @foreach (var v in Enum.GetValues<FuelType>()) { <MudSelectItem Value="v">@Labels.Text(v)</MudSelectItem> }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="6" md="3">
+                            <MudSelect T="TransmissionType" @bind-Value="_model.Transmission" Label="Vites" Variant="Variant.Outlined">
+                                @foreach (var v in Enum.GetValues<TransmissionType>()) { <MudSelectItem Value="v">@Labels.Text(v)</MudSelectItem> }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="6" md="3">
+                            <MudSelect T="BodyType" @bind-Value="_model.BodyType" Label="Kasa tipi" Variant="Variant.Outlined">
+                                @foreach (var v in Enum.GetValues<BodyType>()) { <MudSelectItem Value="v">@Labels.Text(v)</MudSelectItem> }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="6" md="3">
+                            <MudAutocomplete T="string" @bind-Value="_model.Color" SearchFunc="SearchColors" Label="Renk" Required="true" RequiredError="Renk zorunludur."
+                                             Variant="Variant.Outlined" CoerceValue="true" MaxLength="40" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Palette" />
+                        </MudItem>
+                        <MudItem xs="6" md="3">
+                            <MudNumericField @bind-Value="_model.EngineVolume" Label="Motor hacmi" Min="50" Max="10000" HideSpinButtons="true" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="cc" />
+                        </MudItem>
+                        <MudItem xs="6" md="3">
+                            <MudNumericField @bind-Value="_model.EnginePower" Label="Motor gücü" Min="1" Max="2000" HideSpinButtons="true" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="HP" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Plate" Label="Plaka" Placeholder="34 ABC 123" Variant="Variant.Outlined" MaxLength="15" /></MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_model.Vin" Label="Şasi numarası (VIN)" Variant="Variant.Outlined" MaxLength="17" Counter="17"
+                                          Validation="@(new Func<string?, string?>(v => string.IsNullOrWhiteSpace(v) || v.Trim().Length == 17 ? null : "17 karakter olmalı."))" />
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+
+                <MudPaper Outlined="true" Class="panel">
+                    <div class="section-title"><MudIcon Icon="@Icons.Material.Rounded.CarCrash" Size="Size.Small" /> Hasar ve ekspertiz</div>
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" md="4">
+                            <MudNumericField T="decimal?" @bind-Value="_model.DamageRecordAmount" Label="Tramer kaydı" Min="0" Format="N0" Culture="Format.Turkish" HideSpinButtons="true"
+                                             Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="₺" HelperText="Yoksa boş bırakın" />
+                        </MudItem>
+                        <MudItem xs="12" md="4"><MudTextField @bind-Value="_model.PaintedParts" Label="Boyalı parçalar" Variant="Variant.Outlined" MaxLength="500" /></MudItem>
+                        <MudItem xs="12" md="4"><MudTextField @bind-Value="_model.ReplacedParts" Label="Değişen parçalar" Variant="Variant.Outlined" MaxLength="500" /></MudItem>
+                        <MudItem xs="12"><MudTextField @bind-Value="_model.Notes" Label="Notlar" Variant="Variant.Outlined" Lines="3" Sizing="InputSizing.Auto" MaxLength="2000" /></MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" lg="4">
+                <MudPaper Outlined="true" Class="panel mb-4">
+                    <div class="section-title"><MudIcon Icon="@Icons.Material.Rounded.ShoppingCart" Size="Size.Small" /> Alış</div>
+                    <MudStack Spacing="3">
+                        <MudDatePicker @bind-Date="_model.PurchaseDate" Label="Alış tarihi" Variant="Variant.Outlined" Culture="Format.Turkish" DateFormat="dd.MM.yyyy"
+                                       Required="true" MaxDate="DateTime.Today" />
+                        <MoneyField @bind-Value="_model.PurchasePrice" Label="Alış fiyatı" Required="true" />
+                        <MudTextField @bind-Value="_model.SellerName" Label="Satıcı adı" Variant="Variant.Outlined" MaxLength="150" />
+                        <MudTextField @bind-Value="_model.SellerPhone" Label="Satıcı telefonu" Variant="Variant.Outlined" InputType="InputType.Telephone" MaxLength="30" />
+                    </MudStack>
+                </MudPaper>
+
+                <MudPaper Outlined="true" Class="panel">
+                    <div class="section-title"><MudIcon Icon="@Icons.Material.Rounded.Sell" Size="Size.Small" /> Satış</div>
+                    <MoneyField @bind-Value="_model.ListPrice" Label="Satış (ilan) fiyatı" Required="true" />
+                    <div class="profit-preview mt-4">
+                        <div><span>Alış fiyatı</span><b>@Format.Money(_model.PurchasePrice)</b></div>
+                        @if (_expenses > 0)
+                        {
+                            <div><span>Masraflar</span><b>@Format.Money(_expenses)</b></div>
+                        }
+                        <div><span>Tahmini kâr</span><b class="@(Margin >= 0 ? "text-profit" : "text-loss")">@Format.Money(Margin)</b></div>
+                    </div>
+                </MudPaper>
+
+                @if (_error is not null)
+                {
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mt-4">@_error</MudAlert>
+                }
+            </MudItem>
+        </MudGrid>
+    </MudForm>
+}
+
+@code {
+    [Parameter] public long? Id { get; set; }
+
+    private MudForm _form = default!;
+    private VehicleRequest _model = new();
+    private List<string> _brands = [.. Labels.CommonBrands];
+    private string? _title;
+    private decimal _expenses;
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    private bool IsEdit => Id is not null;
+    private decimal Margin => _model.ListPrice - _model.PurchasePrice - _expenses;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var brands = await Api.GetBrandsAsync();
+        if (brands.Data is { } own)
+            _brands = _brands.Union(own, StringComparer.CurrentCultureIgnoreCase).Order(StringComparer.CurrentCulture).ToList();
+
+        if (Id is not { } id)
+            return;
+
+        _loading = true;
+        var result = await Api.GetVehicleAsync(id);
+        if (result.Data is { } v)
+        {
+            _title = v.Title;
+            _expenses = v.TotalExpenses;
+            _model = new VehicleRequest
+            {
+                Brand = v.Brand, Model = v.Model, Trim = v.Trim, Year = v.Year, Kilometers = v.Kilometers, FuelType = v.FuelType,
+                Transmission = v.Transmission, BodyType = v.BodyType, Color = v.Color, EngineVolume = v.EngineVolume, EnginePower = v.EnginePower,
+                Plate = v.Plate, Vin = v.Vin, DamageRecordAmount = v.DamageRecordAmount, PaintedParts = v.PaintedParts, ReplacedParts = v.ReplacedParts,
+                PurchaseDate = v.PurchaseDate, PurchasePrice = v.PurchasePrice, SellerName = v.SellerName, SellerPhone = v.SellerPhone,
+                ListPrice = v.ListPrice, Notes = v.Notes,
+            };
+        }
+        else
+        {
+            _error = result.Error;
+        }
+        _loading = false;
+    }
+
+    private Task<IEnumerable<string>> SearchBrands(string? text, CancellationToken _) =>
+        Task.FromResult(string.IsNullOrWhiteSpace(text) ? _brands.AsEnumerable() : _brands.Where(b => b.Contains(text, StringComparison.CurrentCultureIgnoreCase)));
+
+    private Task<IEnumerable<string>> SearchColors(string? text, CancellationToken _) =>
+        Task.FromResult(string.IsNullOrWhiteSpace(text) ? ColorNames.Presets.AsEnumerable() : ColorNames.Presets.Where(c => c.Contains(text, StringComparison.CurrentCultureIgnoreCase)));
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+        {
+            _error = "Lütfen işaretli alanları kontrol edin.";
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+        var result = IsEdit ? await Api.UpdateVehicleAsync(Id!.Value, _model) : await Api.CreateVehicleAsync(_model);
+        _saving = false;
+
+        if (result is { IsSuccess: true, Data: { } saved })
+        {
+            Snackbar.Add(IsEdit ? "Araç güncellendi." : "Araç stoka eklendi. Şimdi fotoğraf ekleyebilirsiniz.", Severity.Success);
+            Navigation.NavigateTo($"/vehicles/{saved.Id}");
+        }
+        else
+        {
+            _error = result.Error;
+        }
+    }
+}

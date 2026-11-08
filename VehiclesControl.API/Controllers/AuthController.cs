@@ -1,52 +1,28 @@
-﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
-using VehiclesControl.Application.User;
-using VehiclesControl.Domain.Input;
-using VehiclesControl.Domain.Inputs;
-using VehiclesControl.Domain.Outs;
+using Microsoft.AspNetCore.RateLimiting;
+using VehiclesControl.Application.Users;
+using VehiclesControl.Domain.Requests;
 using VehiclesControl.Domain.Responses;
 
-namespace VehiclesControl.API.Controllers
+namespace VehiclesControl.API.Controllers;
+
+[Route("api/v1/auth")]
+public sealed class AuthController(IAuthService auth) : ApiControllerBase
 {
-    [Route("api/v1/[controller]")]
-    [ApiController]
-    public class AuthController : ControllerBase
-    {
-        private readonly IUserService _userService;
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Login)]
+    [HttpPost("login")]
+    public async Task<ActionResult<ApiResponse<LoginResponse>>> Login(LoginRequest request, CancellationToken ct) =>
+        ToResult(await auth.LoginAsync(request, ct));
 
-        #region Constructors
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<ActionResult<ApiResponse<UserResponse>>> Me(CancellationToken ct) =>
+        ToResult(await auth.GetCurrentAsync(CurrentUserId, ct));
 
-        public AuthController(IUserService userService, IMapper mapper)
-        {
-            _userService = userService;
-        }
-
-
-        #endregion
-
-
-        [HttpPost("Login")]
-        public ApiResponse<LoginResponse> Create([FromBody] UserLoginRequest user)
-        {
-            var response = _userService.Login(user);
-            return response;
-        }
-
-        [HttpGet("get-ip")]
-        public ApiResponse<string> GetClientIp()
-        {
-            var ipAddress = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-
-            if (string.IsNullOrEmpty(ipAddress))
-            {
-                ipAddress = HttpContext.Connection.RemoteIpAddress?.MapToIPv6().ToString();
-                if (ipAddress is null)
-                {
-                    return new ApiResponse<string>(true, ResultCode.Instance.NotFound, "Success", "");
-                }
-            }
-            return new ApiResponse<string>(true, ResultCode.Instance.Ok, "Success", ipAddress); 
-        }
-    }
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<ActionResult<ApiResponse<UserResponse>>> UpdateProfile(UpdateProfileRequest request, CancellationToken ct) =>
+        ToResult(await auth.UpdateProfileAsync(CurrentUserId, request, ct));
 }

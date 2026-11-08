@@ -1,26 +1,25 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject ThemeState ThemeState
 
-
-<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
+<MudThemeProvider @ref="_themeProvider" Theme="AppTheme.Theme" IsDarkMode="ThemeState.IsDark" />
 <MudPopoverProvider />
 <MudSnackbarProvider />
-<MudDialogProvider FullWidth="true"
-                   MaxWidth="MaxWidth.ExtraSmall"
-                   CloseButton="true"
-                   BackdropClick="false"
-                   NoHeader="true"
-                   Position="DialogPosition.Center"
-                   CloseOnEscapeKey="true"
-                   BackgroundClass="my-custom-class" />
 
-<MudLayout>
-    <MudMainContent class="login-container">
-          @Body
-    </MudMainContent>
-</MudLayout>
-
+@Body
 
 @code {
-    private MudTheme _theme = new();
-    private bool _isDarkMode = true;
+    private MudThemeProvider? _themeProvider;
+
+    protected override void OnInitialized() => ThemeState.Changed += OnThemeChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _themeProvider is not null)
+            await ThemeState.EnsureLoadedAsync(_themeProvider);
+    }
+
+    private void OnThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => ThemeState.Changed -= OnThemeChanged;
 }

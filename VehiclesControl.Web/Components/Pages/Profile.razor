@@ -1,0 +1,138 @@
+@page "/profile"
+@inject GalleryApi Api
+@inject JwtAuthStateProvider Auth
+@inject ISnackbar Snackbar
+
+<PageTitle>Profil · Vehicles Control</PageTitle>
+
+<PageHeader Eyebrow="Hesap" Title="Profil" Subtitle="Kişisel bilgilerinizi ve şifrenizi güncelleyin." />
+
+@if (_user is null)
+{
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="320px" Class="rounded-lg" />
+}
+else
+{
+    <MudGrid Spacing="4">
+        <MudItem xs="12" md="4">
+            <MudPaper Outlined="true" Class="panel profile-card">
+                <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Class="profile-avatar">@Format.Initials($"{_user.FirstName} {_user.LastName}")</MudAvatar>
+                <MudText Typo="Typo.h6" Class="mt-4">@_user.FirstName @_user.LastName</MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">@_user.Email</MudText>
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" Class="mt-2">@Labels.Text(_user.Role)</MudChip>
+                <MudDivider Class="my-4" />
+                <div class="kv-list">
+                    @if (_user.GalleryName is not null) { <div><span>Galeri</span><b>@_user.GalleryName</b></div> }
+                    <div><span>Üyelik</span><b>@Format.Day(Format.ToLocal(_user.CreatedDate))</b></div>
+                </div>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="8">
+            <MudPaper Outlined="true" Class="panel">
+                <EditForm Model="_model" OnValidSubmit="SaveAsync">
+                    <DataAnnotationsValidator />
+                    <MudText Typo="Typo.h6" Class="mb-4">Kişisel bilgiler</MudText>
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.FirstName" For="() => _model.FirstName" Label="Ad" Variant="Variant.Outlined" /></MudItem>
+                        <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.LastName" For="() => _model.LastName" Label="Soyad" Variant="Variant.Outlined" /></MudItem>
+                        <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Email" For="() => _model.Email" Label="E-posta" InputType="InputType.Email" Variant="Variant.Outlined" /></MudItem>
+                        <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Phone" For="() => _model.Phone" Label="Telefon" InputType="InputType.Telephone" Variant="Variant.Outlined" /></MudItem>
+                    </MudGrid>
+
+                    <MudText Typo="Typo.h6" Class="mt-8 mb-1">Şifre değiştir</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">Değiştirmek istemiyorsanız boş bırakın.</MudText>
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" sm="4">
+                            <MudTextField @bind-Value="_model.CurrentPassword" For="() => _model.CurrentPassword" Label="Mevcut şifre" Variant="Variant.Outlined"
+                                          InputType="InputType.Password" autocomplete="current-password" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudTextField @bind-Value="_model.NewPassword" For="() => _model.NewPassword" Label="Yeni şifre" Variant="Variant.Outlined"
+                                          InputType="InputType.Password" HelperText="En az 8 karakter, büyük/küçük harf ve rakam" autocomplete="new-password" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudTextField @bind-Value="_model.ConfirmPassword" For="() => _model.ConfirmPassword" Label="Yeni şifre (tekrar)" Variant="Variant.Outlined"
+                                          InputType="InputType.Password" autocomplete="new-password" />
+                        </MudItem>
+                    </MudGrid>
+
+                    @if (_error is not null) { <MudAlert Severity="Severity.Error" Variant="Variant.Text" Dense="true" Class="mt-4">@_error</MudAlert> }
+
+                    <div class="d-flex justify-end mt-6">
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="_saving" StartIcon="@Icons.Material.Rounded.Save">
+                            @(_saving ? "Kaydediliyor…" : "Kaydet")
+                        </MudButton>
+                    </div>
+                </EditForm>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private UserResponse? _user;
+    private ProfileModel _model = new();
+    private bool _saving;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = await Auth.GetUserAsync();
+        if (_user is not null)
+            _model = new ProfileModel { FirstName = _user.FirstName, LastName = _user.LastName, Email = _user.Email, Phone = _user.Phone };
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        var result = await Api.UpdateProfileAsync(new UpdateProfileRequest
+        {
+            FirstName = _model.FirstName,
+            LastName = _model.LastName,
+            Email = _model.Email,
+            Phone = _model.Phone,
+            CurrentPassword = string.IsNullOrEmpty(_model.NewPassword) ? null : _model.CurrentPassword,
+            NewPassword = string.IsNullOrEmpty(_model.NewPassword) ? null : _model.NewPassword,
+        });
+
+        if (result is { IsSuccess: true, Data: { } updated })
+        {
+            _user = updated;
+            await Auth.UpdateUserAsync(updated);
+            _model.CurrentPassword = _model.NewPassword = _model.ConfirmPassword = null;
+            Snackbar.Add("Profil güncellendi.", Severity.Success);
+        }
+        else
+        {
+            _error = result.Error;
+        }
+
+        _saving = false;
+    }
+
+    private sealed class ProfileModel
+    {
+        [Required(ErrorMessage = "Ad zorunludur."), MaxLength(100)]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Soyad zorunludur."), MaxLength(100)]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "E-posta zorunludur."), EmailAddress(ErrorMessage = "Geçerli bir e-posta girin.")]
+        public string Email { get; set; } = string.Empty;
+
+        [MaxLength(30)]
+        public string? Phone { get; set; }
+
+        public string? CurrentPassword { get; set; }
+
+        [MinLength(8, ErrorMessage = "Şifre en az 8 karakter olmalıdır.")]
+        [RegularExpression("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).*$", ErrorMessage = "Büyük harf, küçük harf ve rakam içermelidir.")]
+        public string? NewPassword { get; set; }
+
+        [Compare(nameof(NewPassword), ErrorMessage = "Şifreler eşleşmiyor.")]
+        public string? ConfirmPassword { get; set; }
+    }
+}

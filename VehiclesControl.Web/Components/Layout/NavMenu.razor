@@ -1,16 +1,81 @@
-﻿<MudPaper Width="250px" Class="d-inline-flex py-3" Elevation="0" >
-    <MudNavMenu Class="mud-width-full">
-        <MudText Typo="Typo.h6" Class="px-10">Vehicles Control</MudText>
-        <MudImage Height="100" Width="100" Src="/vehicles-icon.png" style="margin-left:60px; margin-top:20px;"></MudImage>
-        <MudDivider Class="my-2" />
-        <MudNavLink Href="/" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
-        <MudNavLink Href="/cars" Icon="@Icons.Material.Filled.CarCrash">Cars</MudNavLink>
-        <MudNavLink Href="/weather" Icon="@Icons.Material.Filled.Dataset">Weather</MudNavLink>
-        <MudNavLink Href="/chat" Icon="@Icons.Material.Filled.Chat">Gemini AI</MudNavLink>
-        <MudNavGroup Title="Settings" Icon="@Icons.Material.Filled.Settings" Expanded="true" >
-            <MudNavLink Href="/usr" Icon="@Icons.Material.Filled.People" IconColor="Color.Success">Users</MudNavLink>
-            <MudNavLink Href="/" Icon="@Icons.Material.Filled.Security" IconColor="Color.Info">Security</MudNavLink>
-        </MudNavGroup>
-    </MudNavMenu>
-</MudPaper>
+@inject JwtAuthStateProvider Auth
+@inject NavigationManager Navigation
 
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-mark">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15.5 6.2 9.3A2 2 0 0 1 8.1 8h7.8a2 2 0 0 1 1.9 1.3L20 15.5V18a1 1 0 0 1-1 1h-1.2a1 1 0 0 1-1-1v-1H7.2v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2.5Zm3.6-2.5h8.8l-1.2-3.4a.8.8 0 0 0-.8-.6H9.6a.8.8 0 0 0-.8.6L7.6 13ZM7 16a1.2 1.2 0 1 0 0-2.4A1.2 1.2 0 0 0 7 16Zm10 0a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z" fill="currentColor"/></svg>
+        </div>
+        <div class="min-w-0">
+            <div class="brand-name">Vehicles<span>Control</span></div>
+            <div class="brand-caption">Galeri yönetim sistemi</div>
+        </div>
+    </div>
+
+    <AuthorizeView Context="auth">
+        @if (auth.User.FindFirst(JwtAuthStateProvider.GalleryNameClaim)?.Value is { } gallery)
+        {
+            <div class="tenant-card">
+                <div class="tenant-avatar">@Format.Initials(gallery)</div>
+                <div class="min-w-0">
+                    <div class="tenant-name text-truncate">@gallery</div>
+                    <div class="tenant-meta"><span class="live-dot"></span>Aktif galeri</div>
+                </div>
+            </div>
+        }
+    </AuthorizeView>
+
+    <MudNavMenu Class="app-nav" Rounded="false">
+        <AuthorizeView Roles="SuperAdmin">
+            <Authorized>
+                <div class="nav-section">Yönetim</div>
+                <MudNavLink Href="/admin" Icon="@Icons.Material.Rounded.Storefront">Galeriler</MudNavLink>
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-section">Genel</div>
+                <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Rounded.SpaceDashboard">Panel</MudNavLink>
+
+                <div class="nav-section">Stok ve satış</div>
+                <MudNavLink Href="/vehicles" Icon="@Icons.Material.Rounded.DirectionsCar">Araçlar</MudNavLink>
+                <MudNavLink Href="/sales" Icon="@Icons.Material.Rounded.Sell">Satışlar</MudNavLink>
+                <MudNavLink Href="/customers" Icon="@Icons.Material.Rounded.Groups">Müşteriler</MudNavLink>
+
+                <div class="nav-section">Operasyon</div>
+                <MudNavLink Href="/expenses" Icon="@Icons.Material.Rounded.ReceiptLong">Masraflar</MudNavLink>
+                <MudNavLink Href="/reminders" Icon="@Icons.Material.Rounded.EventNote">Hatırlatıcılar</MudNavLink>
+
+                <AuthorizeView Roles="GalleryOwner" Context="owner">
+                    <div class="nav-section">Galeri</div>
+                    <MudNavLink Href="/team" Icon="@Icons.Material.Rounded.Badge">Ekip</MudNavLink>
+                    <MudNavLink Href="/settings" Icon="@Icons.Material.Rounded.Tune">Galeri ayarları</MudNavLink>
+                </AuthorizeView>
+            </NotAuthorized>
+        </AuthorizeView>
+    </MudNavMenu>
+
+    <AuthorizeView Context="auth">
+        <div class="sidebar-user">
+            <a class="sidebar-user-link" href="/profile" title="Profil">
+                <div class="user-avatar">@Format.Initials(auth.User.Identity?.Name)</div>
+                <div class="min-w-0">
+                    <div class="user-name text-truncate">@auth.User.Identity?.Name</div>
+                    <div class="user-role text-truncate">@RoleText(auth.User)</div>
+                </div>
+            </a>
+            <MudTooltip Text="Çıkış yap">
+                <MudIconButton Icon="@Icons.Material.Rounded.Logout" Size="Size.Small" Class="sidebar-logout" OnClick="SignOutAsync" aria-label="Çıkış yap" />
+            </MudTooltip>
+        </div>
+    </AuthorizeView>
+</div>
+
+@code {
+    private static string RoleText(System.Security.Claims.ClaimsPrincipal user) =>
+        Enum.TryParse<UserRole>(user.FindFirst(JwtAuthStateProvider.RoleClaim)?.Value, out var role) ? Labels.Text(role) : "";
+
+    private async Task SignOutAsync()
+    {
+        await Auth.SignOutAsync();
+        Navigation.NavigateTo("/login", replace: true);
+    }
+}

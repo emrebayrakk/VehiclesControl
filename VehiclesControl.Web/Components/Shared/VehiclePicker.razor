@@ -1,0 +1,35 @@
+@inject GalleryApi Api
+
+<MudAutocomplete T="VehicleOption" Value="Value" ValueChanged="ValueChanged" SearchFunc="SearchAsync" ToStringFunc="Describe"
+                 Label="@Label" Variant="Variant.Outlined" Required="Required" RequiredError="Araç seçin." Clearable="true"
+                 ResetValueOnEmptyText="true" DebounceInterval="250" MinCharacters="0" Disabled="Disabled"
+                 Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.DirectionsCar" HelperText="@HelperText">
+    <ItemTemplate Context="option">
+        <div class="d-flex align-center gap-2">
+            <span>@option.Title</span>
+            @if (option.Plate is not null)
+            {
+                <span class="plate">@option.Plate</span>
+            }
+        </div>
+    </ItemTemplate>
+</MudAutocomplete>
+
+@code {
+    [Parameter] public VehicleOption? Value { get; set; }
+    [Parameter] public EventCallback<VehicleOption?> ValueChanged { get; set; }
+    [Parameter] public string Label { get; set; } = "Araç";
+    [Parameter] public bool AvailableOnly { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? HelperText { get; set; }
+
+    private static string Describe(VehicleOption? option) =>
+        option is null ? string.Empty : option.Plate is null ? option.Title : $"{option.Title} · {option.Plate}";
+
+    private async Task<IEnumerable<VehicleOption>> SearchAsync(string? text, CancellationToken ct)
+    {
+        var result = await Api.GetVehicleOptionsAsync(text, AvailableOnly, ct);
+        return result.Data ?? [];
+    }
+}

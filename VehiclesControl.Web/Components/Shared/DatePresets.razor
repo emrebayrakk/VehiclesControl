@@ -1,0 +1,48 @@
+<div class="segmented" role="tablist" aria-label="Tarih aralığı">
+    @foreach (var (key, label) in Options)
+    {
+        <button type="button" role="tab" aria-selected="@(Value == key)" class="@(Value == key ? "active" : null)" @onclick="() => SelectAsync(key)">@label</button>
+    }
+</div>
+
+@code {
+    public sealed record Range(DateTime? From, DateTime? To);
+
+    private static readonly (string Key, string Label)[] Options =
+    [
+        ("all", "Tümü"),
+        ("this-month", "Bu ay"),
+        ("last-month", "Geçen ay"),
+        ("3-months", "Son 3 ay"),
+        ("this-year", "Bu yıl"),
+    ];
+
+    [Parameter] public string Value { get; set; } = "all";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    /// <summary>Raised with the date range of the selected preset (null bounds = no limit).</summary>
+    [Parameter] public EventCallback<Range> RangeChanged { get; set; }
+
+    public static Range Resolve(string key)
+    {
+        var today = DateTime.Today;
+        var monthStart = new DateTime(today.Year, today.Month, 1);
+        return key switch
+        {
+            "this-month" => new Range(monthStart, today),
+            "last-month" => new Range(monthStart.AddMonths(-1), monthStart.AddDays(-1)),
+            "3-months" => new Range(monthStart.AddMonths(-2), today),
+            "this-year" => new Range(new DateTime(today.Year, 1, 1), today),
+            _ => new Range(null, null),
+        };
+    }
+
+    private async Task SelectAsync(string key)
+    {
+        if (key == Value)
+            return;
+        Value = key;
+        await ValueChanged.InvokeAsync(key);
+        await RangeChanged.InvokeAsync(Resolve(key));
+    }
+}

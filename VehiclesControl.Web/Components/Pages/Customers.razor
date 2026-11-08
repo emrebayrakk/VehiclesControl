@@ -1,0 +1,101 @@
+@page "/customers"
+@inject GalleryApi Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<PageTitle>Müşteriler · Vehicles Control</PageTitle>
+
+<PageHeader Eyebrow="Satış" Title="Müşteriler" Subtitle="Araç aldığınız veya sattığınız kişiler.">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.PersonAdd" OnClick="CreateAsync">Yeni müşteri</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Outlined="true" Class="overflow-hidden">
+    <div class="grid-toolbar">
+        <MudTextField T="string" Value="_search" ValueChanged="SearchChanged" Immediate="true" DebounceInterval="300" Placeholder="Ad, telefon, e-posta veya şehir ara…"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Class="toolbar-search" />
+    </div>
+    <MudDataGrid @ref="_grid" T="CustomerResponse" ServerData="LoadAsync" Hover="true" Elevation="0" Class="vc-grid" SortMode="SortMode.None" RowsPerPage="20">
+        <Columns>
+            <TemplateColumn Title="Müşteri">
+                <CellTemplate>
+                    <div class="d-flex align-center gap-3">
+                        <MudAvatar Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined">@Format.Initials(context.Item.FullName)</MudAvatar>
+                        <div>
+                            <div class="recent-title">@context.Item.FullName</div>
+                            <div class="recent-sub">@(context.Item.City ?? "—")</div>
+                        </div>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="İletişim">
+                <CellTemplate>
+                    <div><a class="link" href="@($"tel:{context.Item.Phone}")">@context.Item.Phone</a></div>
+                    <div class="recent-sub">@context.Item.Email</div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Alım" HeaderClass="text-right" CellClass="text-right">
+                <CellTemplate>
+                    <div class="tabular">@context.Item.PurchaseCount araç</div>
+                    @if (context.Item.TotalSpent > 0) { <div class="recent-sub tabular">@Format.Money(context.Item.TotalSpent)</div> }
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Kayıt">
+                <CellTemplate><span class="mud-text-secondary">@Format.Day(Format.ToLocal(context.Item.CreatedDate))</span></CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="" CellClass="text-right">
+                <CellTemplate>
+                    @if (context.Item.PurchaseCount > 0)
+                    {
+                        <MudTooltip Text="Satışlarını göster">
+                            <MudIconButton Icon="@Icons.Material.Rounded.Sell" Size="Size.Small" Href="@($"/sales?customerId={context.Item.Id}")" aria-label="Satışları" />
+                        </MudTooltip>
+                    }
+                    <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" OnClick="() => EditAsync(context.Item)" aria-label="Düzenle" />
+                    <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteAsync(context.Item)" aria-label="Sil" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <EmptyState Icon="@Icons.Material.Rounded.Groups" Title="Müşteri bulunamadı" />
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="CustomerResponse" PageSizeOptions="[20, 50, 100]" RowsPerPageString="Sayfa başına" InfoFormat="{first_item}–{last_item} / {all_items}" />
+        </PagerContent>
+    </MudDataGrid>
+</MudPaper>
+
+@code {
+    private MudDataGrid<CustomerResponse> _grid = default!;
+    private string? _search;
+
+    private async Task<GridData<CustomerResponse>> LoadAsync(GridState<CustomerResponse> state, CancellationToken ct)
+    {
+        var result = await Api.GetCustomersAsync(new PagedQuery { Search = _search, Page = state.Page + 1, PageSize = state.PageSize });
+        if (!result.IsSuccess)
+            Snackbar.Add(result.Error ?? "Müşteriler yüklenemedi.", Severity.Error);
+        return new GridData<CustomerResponse> { Items = result.Data?.Items ?? [], TotalItems = result.Data?.TotalCount ?? 0 };
+    }
+
+    private Task SearchChanged(string? value) { _search = value; return _grid.ReloadServerData(); }
+
+    private async Task CreateAsync()
+    {
+        if (await CustomerDialog.OpenAsync(Dialogs) is not null) { Snackbar.Add("Müşteri eklendi.", Severity.Success); await _grid.ReloadServerData(); }
+    }
+
+    private async Task EditAsync(CustomerResponse customer)
+    {
+        if (await CustomerDialog.OpenAsync(Dialogs, customer) is not null) { Snackbar.Add("Müşteri güncellendi.", Severity.Success); await _grid.ReloadServerData(); }
+    }
+
+    private async Task DeleteAsync(CustomerResponse customer)
+    {
+        if (!await ConfirmDialog.AskAsync(Dialogs, "Müşteriyi sil", $"{customer.FullName} silinecek."))
+            return;
+        var result = await Api.DeleteCustomerAsync(customer.Id);
+        Snackbar.Add(result.IsSuccess ? "Müşteri silindi." : result.Error ?? "Silinemedi.", result.IsSuccess ? Severity.Info : Severity.Error);
+        if (result.IsSuccess) await _grid.ReloadServerData();
+    }
+}

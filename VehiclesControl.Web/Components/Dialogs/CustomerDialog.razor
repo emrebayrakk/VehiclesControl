@@ -1,0 +1,68 @@
+@inject GalleryApi Api
+
+<MudDialog>
+    <TitleContent>
+        <DialogHeader Icon="@Icons.Material.Rounded.Person" Title="@(Customer is null ? "Yeni müşteri" : "Müşteriyi düzenle")"
+                      Subtitle="@(Customer is null ? null : $"{Customer.PurchaseCount} alım · toplam {Format.Money(Customer.TotalSpent)}")" />
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudGrid Spacing="3" Class="pt-2">
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.FirstName" Label="Ad" Required="true" RequiredError="Ad zorunludur." Variant="Variant.Outlined" MaxLength="100" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.LastName" Label="Soyad" Required="true" RequiredError="Soyad zorunludur." Variant="Variant.Outlined" MaxLength="100" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Phone" Label="Telefon" Required="true" RequiredError="Telefon zorunludur." Variant="Variant.Outlined" InputType="InputType.Telephone" MaxLength="30" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Email" Label="E-posta" Variant="Variant.Outlined" InputType="InputType.Email" MaxLength="256" /></MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="_model.City" Label="Şehir" Variant="Variant.Outlined" MaxLength="80" /></MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="_model.Notes" Label="Notlar" Variant="Variant.Outlined" Lines="3" Sizing="InputSizing.Auto" MaxLength="2000" /></MudItem>
+            </MudGrid>
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Text" Dense="true" Class="mt-3">@_error</MudAlert>
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()" Disabled="_saving">Vazgeç</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="_saving">@(_saving ? "Kaydediliyor…" : "Kaydet")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public CustomerResponse? Customer { get; set; }
+
+    private MudForm _form = default!;
+    private CustomerRequest _model = new();
+    private bool _saving;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        if (Customer is { } c)
+            _model = new CustomerRequest { FirstName = c.FirstName, LastName = c.LastName, Phone = c.Phone, Email = c.Email, City = c.City, Notes = c.Notes };
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        _error = null;
+        var result = Customer is null ? await Api.CreateCustomerAsync(_model) : await Api.UpdateCustomerAsync(Customer.Id, _model);
+        _saving = false;
+
+        if (result is { IsSuccess: true, Data: { } saved })
+            MudDialog.Close(DialogResult.Ok(saved));
+        else
+            _error = result.Error;
+    }
+
+    public static async Task<CustomerResponse?> OpenAsync(IDialogService dialogs, CustomerResponse? customer = null)
+    {
+        var dialog = await dialogs.ShowAsync<CustomerDialog>(customer is null ? "Yeni müşteri" : "Müşteri",
+            new DialogParameters<CustomerDialog> { { x => x.Customer, customer } });
+        return (await dialog.Result) is { Canceled: false, Data: CustomerResponse saved } ? saved : null;
+    }
+}

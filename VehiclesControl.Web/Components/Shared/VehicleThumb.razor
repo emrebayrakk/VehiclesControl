@@ -1,0 +1,17 @@
+@if (Format.Media(Url) is { } src)
+{
+    <img class="@($"vehicle-thumb {Class}")" src="@src" alt="" loading="lazy" style="@SizeStyle" />
+}
+else
+{
+    <div class="@($"vehicle-thumb placeholder {Class}")" style="@SizeStyle"><MudIcon Icon="@Icons.Material.Rounded.DirectionsCar" /></div>
+}
+
+@code {
+    [Parameter] public string? Url { get; set; }
+    [Parameter] public int Width { get; set; } = 64;
+    [Parameter] public int Height { get; set; } = 48;
+    [Parameter] public string? Class { get; set; }
+
+    private string SizeStyle => $"width:{Width}px;height:{Height}px";
+}

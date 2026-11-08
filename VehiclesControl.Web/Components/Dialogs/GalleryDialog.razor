@@ -1,0 +1,81 @@
+@inject GalleryApi Api
+
+<MudDialog>
+    <TitleContent>
+        <DialogHeader Icon="@Icons.Material.Rounded.Storefront" Title="@(Gallery is null ? "Yeni galeri" : "Galeriyi düzenle")"
+                      Subtitle="@(Gallery is null ? "Galeri ve yönetici hesabı birlikte oluşturulur." : Gallery.Name)" />
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudText Typo="Typo.subtitle2" Class="mb-3 mt-1">Galeri bilgileri</MudText>
+            <GalleryFields Model="_model.Gallery" />
+
+            @if (Gallery is null)
+            {
+                <MudText Typo="Typo.subtitle2" Class="mt-6 mb-3">Galeri sahibi hesabı</MudText>
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.OwnerFirstName" Label="Ad" Required="true" RequiredError="Ad zorunludur." Variant="Variant.Outlined" /></MudItem>
+                    <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.OwnerLastName" Label="Soyad" Required="true" RequiredError="Soyad zorunludur." Variant="Variant.Outlined" /></MudItem>
+                    <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.OwnerEmail" Label="E-posta (giriş)" Required="true" RequiredError="E-posta zorunludur." InputType="InputType.Email" Variant="Variant.Outlined" /></MudItem>
+                    <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.OwnerPhone" Label="Telefon" InputType="InputType.Telephone" Variant="Variant.Outlined" /></MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_model.OwnerPassword" Label="Geçici şifre" Required="true" RequiredError="Şifre zorunludur." Variant="Variant.Outlined"
+                                      InputType="InputType.Password" HelperText="En az 8 karakter, büyük/küçük harf ve rakam. Yöneticiye iletin; profilinden değiştirebilir."
+                                      autocomplete="new-password" />
+                    </MudItem>
+                </MudGrid>
+            }
+
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Text" Dense="true" Class="mt-3">@_error</MudAlert>
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()" Disabled="_saving">Vazgeç</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="_saving">@(_saving ? "Kaydediliyor…" : Gallery is null ? "Galeriyi oluştur" : "Kaydet")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public GalleryResponse? Gallery { get; set; }
+
+    private MudForm _form = default!;
+    private readonly CreateGalleryRequest _model = new();
+    private bool _saving;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        if (Gallery is { } g)
+        {
+            _model.Gallery = new GalleryRequest { Name = g.Name, City = g.City, Phone = g.Phone, Email = g.Email, Address = g.Address, TaxNumber = g.TaxNumber };
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        _error = null;
+        var result = Gallery is null ? await Api.CreateGalleryAsync(_model) : await Api.UpdateGalleryAsync(Gallery.Id, _model.Gallery);
+        _saving = false;
+
+        if (result is { IsSuccess: true, Data: { } saved })
+            MudDialog.Close(DialogResult.Ok(saved));
+        else
+            _error = result.Error;
+    }
+
+    public static async Task<GalleryResponse?> OpenAsync(IDialogService dialogs, GalleryResponse? gallery = null)
+    {
+        var dialog = await dialogs.ShowAsync<GalleryDialog>("Galeri", new DialogParameters<GalleryDialog> { { x => x.Gallery, gallery } },
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        return (await dialog.Result) is { Canceled: false, Data: GalleryResponse saved } ? saved : null;
+    }
+}

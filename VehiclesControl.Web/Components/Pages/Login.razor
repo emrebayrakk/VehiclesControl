@@ -1,0 +1,147 @@
+@page "/login"
+@layout LoginLayout
+@inject GalleryApi Api
+@inject JwtAuthStateProvider Auth
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<PageTitle>Giriş · Vehicles Control</PageTitle>
+
+<div class="login-shell">
+    <section class="login-hero" aria-hidden="true">
+        <div class="brand brand-light">
+            <div class="brand-mark"><MudIcon Icon="@Icons.Material.Rounded.DirectionsCar" /></div>
+            <div class="brand-name">Vehicles Control</div>
+        </div>
+
+        <div class="hero-copy">
+            <h2>Galerinizi tek panelden yönetin.</h2>
+            <p>Stok, satış, müşteri ve masraflarınızı takip edin; her aracın gerçek maliyetini ve kârını anında görün.</p>
+            <ul class="hero-points">
+                <li><MudIcon Icon="@Icons.Material.Rounded.Inventory2" Size="Size.Small" /> Fotoğraflı araç stoku ve ekspertiz bilgileri</li>
+                <li><MudIcon Icon="@Icons.Material.Rounded.TrendingUp" Size="Size.Small" /> Araç bazlı maliyet, satış ve kâr takibi</li>
+                <li><MudIcon Icon="@Icons.Material.Rounded.NotificationsActive" Size="Size.Small" /> Muayene, sigorta ve kasko hatırlatıcıları</li>
+            </ul>
+        </div>
+
+        <div class="hero-footer">© @DateTime.Now.Year Vehicles Control</div>
+    </section>
+
+    <section class="login-panel">
+        <div class="login-card">
+            <MudText Typo="Typo.h4" HtmlTag="h1">Hoş geldiniz</MudText>
+            <MudText Class="mud-text-secondary mt-1 mb-8">Galeri hesabınızla giriş yapın.</MudText>
+
+            <EditForm Model="_model" OnValidSubmit="SubmitAsync">
+                <DataAnnotationsValidator />
+                <MudStack Spacing="4">
+                    <MudTextField @bind-Value="_model.Email" For="() => _model.Email" Label="E-posta" InputType="InputType.Email"
+                                  Variant="Variant.Outlined" AutoFocus="true" Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Rounded.AlternateEmail" autocomplete="username" />
+                    <MudTextField @bind-Value="_model.Password" For="() => _model.Password" Label="Şifre"
+                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)" Variant="Variant.Outlined"
+                                  Adornment="Adornment.End" AdornmentIcon="@(_showPassword ? Icons.Material.Rounded.VisibilityOff : Icons.Material.Rounded.Visibility)"
+                                  OnAdornmentClick="() => _showPassword = !_showPassword" AdornmentAriaLabel="Şifreyi göster veya gizle"
+                                  autocomplete="current-password" />
+
+                    @if (_error is not null)
+                    {
+                        <MudAlert Severity="Severity.Error" Variant="Variant.Text" Dense="true">@_error</MudAlert>
+                    }
+
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                               FullWidth="true" Disabled="_busy" Class="login-submit">
+                        @if (_busy)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>Giriş yapılıyor…</span>
+                        }
+                        else
+                        {
+                            <span>Giriş yap</span>
+                        }
+                    </MudButton>
+                </MudStack>
+            </EditForm>
+
+            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-6">
+                Hesabınız yok mu? Galeri hesapları sistem yöneticisi tarafından açılır.
+            </MudText>
+
+            @if (_devAccounts.Count > 0)
+            {
+                <MudPaper Outlined="true" Class="pa-4 mt-6 dev-accounts">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-2">Geliştirme hesapları (tıklayınca doldurulur)</MudText>
+                    @foreach (var account in _devAccounts)
+                    {
+                        <button type="button" class="dev-account" @onclick="() => Fill(account)">
+                            <span>@account.Label</span><code>@account.Email</code>
+                        </button>
+                    }
+                </MudPaper>
+            }
+        </div>
+    </section>
+</div>
+
+@code {
+    private sealed record DevAccount(string Label, string Email, string Password);
+
+    private readonly LoginModel _model = new();
+    private readonly List<DevAccount> _devAccounts = [];
+    private bool _busy;
+    private bool _showPassword;
+    private string? _error;
+
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Only present in appsettings.Development.json, mirroring the API's demo seed.
+        foreach (var section in Configuration.GetSection("DevAccounts").GetChildren())
+        {
+            if (section["Email"] is { } email && section["Password"] is { } password)
+                _devAccounts.Add(new DevAccount(section["Label"] ?? email, email, password));
+        }
+
+        if (await Auth.GetTokenAsync() is not null)
+            Navigation.NavigateTo(SafeReturnUrl ?? "/", replace: true);
+    }
+
+    private string? SafeReturnUrl =>
+        ReturnUrl is { Length: > 1 } url && url.StartsWith('/') && !url.StartsWith("//") && !url.StartsWith("/login") ? url : null;
+
+    private void Fill(DevAccount account)
+    {
+        _model.Email = account.Email;
+        _model.Password = account.Password;
+    }
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+
+        var result = await Api.LoginAsync(new LoginRequest { Email = _model.Email, Password = _model.Password });
+        if (result is { IsSuccess: true, Data: { } login })
+        {
+            await Auth.SignInAsync(login);
+            var home = login.User.Role == UserRole.SuperAdmin ? "/admin" : "/";
+            Navigation.NavigateTo(SafeReturnUrl ?? home, replace: true);
+            return;
+        }
+
+        _error = result.Error;
+        _busy = false;
+    }
+
+    private sealed class LoginModel
+    {
+        [Required(ErrorMessage = "E-posta zorunludur.")]
+        [EmailAddress(ErrorMessage = "Geçerli bir e-posta girin.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Şifre zorunludur.")]
+        public string Password { get; set; } = string.Empty;
+    }
+}

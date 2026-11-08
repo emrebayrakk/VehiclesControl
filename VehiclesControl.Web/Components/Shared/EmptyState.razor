@@ -1,0 +1,19 @@
+<div class="empty-state">
+    <div class="empty-icon"><MudIcon Icon="@Icon" Size="Size.Large" /></div>
+    <MudText Typo="Typo.h6" Class="mt-3">@Title</MudText>
+    @if (Text is not null)
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mt-1">@Text</MudText>
+    }
+    @if (ChildContent is not null)
+    {
+        <div class="mt-4">@ChildContent</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = Icons.Material.Rounded.Inbox;
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

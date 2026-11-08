@@ -1,0 +1,70 @@
+@inject GalleryApi Api
+
+<MudDialog>
+    <TitleContent>
+        <DialogHeader Icon="@Icons.Material.Rounded.PersonAdd" Title="Ekibe kişi ekle" Subtitle="Eklediğiniz kişi bu bilgilerle giriş yapar." />
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudGrid Spacing="3" Class="pt-2">
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.FirstName" Label="Ad" Required="true" RequiredError="Ad zorunludur." Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.LastName" Label="Soyad" Required="true" RequiredError="Soyad zorunludur." Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Email" Label="E-posta (giriş)" Required="true" RequiredError="E-posta zorunludur." InputType="InputType.Email" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Phone" Label="Telefon" InputType="InputType.Telephone" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="UserRole" @bind-Value="_model.Role" Label="Rol" Variant="Variant.Outlined">
+                        <MudSelectItem Value="UserRole.GalleryStaff">@Labels.Text(UserRole.GalleryStaff)</MudSelectItem>
+                        <MudSelectItem Value="UserRole.GalleryOwner">@Labels.Text(UserRole.GalleryOwner)</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_model.Password" Label="Geçici şifre" Required="true" RequiredError="Şifre zorunludur." Variant="Variant.Outlined"
+                                  InputType="InputType.Password" HelperText="En az 8 karakter, büyük/küçük harf ve rakam" autocomplete="new-password" />
+                </MudItem>
+            </MudGrid>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary mt-3 d-block">
+                Personel araç, müşteri, satış ve masraf kaydı yapabilir; ekip, galeri ayarları, araç silme ve satış iptali yalnızca galeri sahibindedir.
+            </MudText>
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Text" Dense="true" Class="mt-3">@_error</MudAlert>
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()" Disabled="_saving">Vazgeç</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="_saving">@(_saving ? "Kaydediliyor…" : "Ekle")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private readonly TeamMemberRequest _model = new();
+    private bool _saving;
+    private string? _error;
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        _error = null;
+        var result = await Api.AddTeamMemberAsync(_model);
+        _saving = false;
+
+        if (result is { IsSuccess: true, Data: { } saved })
+            MudDialog.Close(DialogResult.Ok(saved));
+        else
+            _error = result.Error;
+    }
+
+    public static async Task<UserResponse?> OpenAsync(IDialogService dialogs)
+    {
+        var dialog = await dialogs.ShowAsync<TeamMemberDialog>("Ekip");
+        return (await dialog.Result) is { Canceled: false, Data: UserResponse saved } ? saved : null;
+    }
+}

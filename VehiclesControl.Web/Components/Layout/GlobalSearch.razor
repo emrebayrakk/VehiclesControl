@@ -1,0 +1,57 @@
+@inject GalleryApi Api
+@inject NavigationManager Navigation
+
+<div id="global-search" class="global-search">
+    <MudAutocomplete T="SearchHit" @ref="_box" SearchFunc="SearchAsync" ToStringFunc="@(h => h?.Title ?? string.Empty)"
+                     ValueChanged="OpenAsync" Placeholder="Araç, plaka veya müşteri ara…" Variant="Variant.Outlined" Margin="Margin.Dense"
+                     Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" DebounceInterval="200" MinCharacters="2"
+                     ResetValueOnEmptyText="true" Clearable="false" MaxItems="10" ShowProgressIndicator="true" Dense="true"
+                     PopoverClass="search-popover" aria-label="Genel arama">
+        <ItemTemplate Context="hit">
+            <div class="search-hit">
+                <div class="@($"search-hit-icon {hit.Kind}")"><MudIcon Icon="@hit.Icon" Size="Size.Small" /></div>
+                <div class="min-w-0">
+                    <div class="search-hit-title text-truncate">@hit.Title</div>
+                    <div class="search-hit-sub text-truncate">@hit.Subtitle</div>
+                </div>
+            </div>
+        </ItemTemplate>
+        <NoItemsTemplate>
+            <div class="pa-3 mud-text-secondary text-body2">Sonuç bulunamadı.</div>
+        </NoItemsTemplate>
+    </MudAutocomplete>
+    <kbd class="search-kbd">Ctrl K</kbd>
+</div>
+
+@code {
+    private sealed record SearchHit(string Kind, string Icon, string Title, string Subtitle, string Href);
+
+    private MudAutocomplete<SearchHit> _box = default!;
+
+    private async Task<IEnumerable<SearchHit>> SearchAsync(string? text, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return [];
+
+        var vehicles = Api.GetVehicleOptionsAsync(text, availableOnly: false, ct);
+        var customers = Api.GetCustomersAsync(new PagedQuery { Search = text, PageSize = 4 }, ct);
+        await Task.WhenAll(vehicles, customers);
+
+        var hits = new List<SearchHit>();
+        hits.AddRange((vehicles.Result.Data ?? []).Take(6).Select(v => new SearchHit(
+            "vehicle", Icons.Material.Rounded.DirectionsCar, v.Title,
+            $"{v.Plate ?? "Plakasız"} · {Labels.Text(v.Status)} · {Format.Money(v.ListPrice)}", $"/vehicles/{v.Id}")));
+        hits.AddRange((customers.Result.Data?.Items ?? []).Select(c => new SearchHit(
+            "customer", Icons.Material.Rounded.Person, c.FullName,
+            $"{c.Phone} · {c.PurchaseCount} alım", $"/sales?customerId={c.Id}")));
+        return hits;
+    }
+
+    private async Task OpenAsync(SearchHit? hit)
+    {
+        if (hit is null)
+            return;
+        await _box.ClearAsync();
+        Navigation.NavigateTo(hit.Href);
+    }
+}

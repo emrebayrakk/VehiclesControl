@@ -15,8 +15,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VehiclesControl.Infrastruct
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VehiclesControl.Tests", "VehiclesControl.Tests\VehiclesControl.Tests.csproj", "{3263D7B6-B86C-45B7-97CD-C7AB9EDF9623}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Car.API", "Car.API\Car.API.csproj", "{6CFF683F-B5F3-411C-8F50-763AEEB68CEC}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VehiclesControl.Web", "VehiclesControl.Web\VehiclesControl.Web.csproj", "{683066F6-4321-4FC1-8225-EEF265B9718D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VehiclesControl.Hangfire", "VehiclesControl.Hangfire\VehiclesControl.Hangfire.csproj", "{C59813E8-A4B6-4865-A3AE-DA22CE71C44A}"
@@ -51,10 +49,6 @@ Global
 		{3263D7B6-B86C-45B7-97CD-C7AB9EDF9623}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3263D7B6-B86C-45B7-97CD-C7AB9EDF9623}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3263D7B6-B86C-45B7-97CD-C7AB9EDF9623}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6CFF683F-B5F3-411C-8F50-763AEEB68CEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6CFF683F-B5F3-411C-8F50-763AEEB68CEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6CFF683F-B5F3-411C-8F50-763AEEB68CEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6CFF683F-B5F3-411C-8F50-763AEEB68CEC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{683066F6-4321-4FC1-8225-EEF265B9718D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{683066F6-4321-4FC1-8225-EEF265B9718D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{683066F6-4321-4FC1-8225-EEF265B9718D}.Release|Any CPU.ActiveCfg = Release|Any CPU

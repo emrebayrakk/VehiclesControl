@@ -1,0 +1,112 @@
+@page "/sales"
+@inject GalleryApi Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<PageTitle>Satışlar · Vehicles Control</PageTitle>
+
+<PageHeader Eyebrow="Satış" Title="Satışlar" Subtitle="Tamamlanan satışlar ve araç bazında kâr. Yeni satışı aracın sayfasından kaydedin." />
+
+<MudGrid Spacing="4" Class="mb-2">
+    <MudItem xs="12" sm="4"><StatCard Label="Satış adedi" Value="@Format.Number(_totals?.Count ?? 0)" Icon="@Icons.Material.Rounded.Sell" Accent="Color.Secondary" Loading="_totals is null" /></MudItem>
+    <MudItem xs="12" sm="4"><StatCard Label="Ciro" Value="@Format.Money(_totals?.Revenue ?? 0)" Icon="@Icons.Material.Rounded.Payments" Accent="Color.Primary" Loading="_totals is null" /></MudItem>
+    <MudItem xs="12" sm="4"><StatCard Label="Kâr" Value="@Format.Money(_totals?.Profit ?? 0)" Icon="@Icons.Material.Rounded.TrendingUp" Accent="Color.Success" Loading="_totals is null" /></MudItem>
+</MudGrid>
+
+<MudPaper Outlined="true" Class="overflow-hidden mt-4">
+    <div class="grid-toolbar">
+        <MudTextField T="string" Value="_search" ValueChanged="SearchChanged" Immediate="true" DebounceInterval="300" Placeholder="Araç, plaka veya müşteri ara…"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Class="toolbar-search" />
+        <DatePresets @bind-Value="_preset" RangeChanged="RangeChanged" />
+        @if (CustomerId is not null)
+        {
+            <MudChip T="string" OnClose="ClearCustomer" Color="Color.Primary" Variant="Variant.Text">Müşteri filtresi</MudChip>
+        }
+    </div>
+    <MudDataGrid @ref="_grid" T="SaleResponse" ServerData="LoadAsync" Hover="true" Elevation="0" Class="vc-grid" SortMode="SortMode.None" RowsPerPage="20">
+        <Columns>
+            <TemplateColumn Title="Tarih"><CellTemplate><span class="tabular">@Format.Day(context.Item.SaleDate)</span></CellTemplate></TemplateColumn>
+            <TemplateColumn Title="Araç">
+                <CellTemplate>
+                    <a class="link recent-title" href="@($"/vehicles/{context.Item.VehicleId}")">@context.Item.VehicleTitle</a>
+                    @if (context.Item.Plate is not null) { <div><span class="plate small">@context.Item.Plate</span></div> }
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Müşteri">
+                <CellTemplate>
+                    <div>@context.Item.CustomerName</div>
+                    <div class="recent-sub">@Labels.Text(context.Item.PaymentMethod)@(context.Item.SoldByName is null ? "" : $" · {context.Item.SoldByName}")</div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Satış" HeaderClass="text-right" CellClass="text-right">
+                <CellTemplate>
+                    <div class="recent-title tabular">@Format.Money(context.Item.SalePrice)</div>
+                    <div class="recent-sub tabular">maliyet @Format.Money(context.Item.TotalCost)</div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Kâr" HeaderClass="text-right" CellClass="text-right">
+                <CellTemplate>
+                    <span class="recent-title tabular @(context.Item.Profit >= 0 ? "text-profit" : "text-loss")">@Format.Money(context.Item.Profit)</span>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="" CellClass="text-right">
+                <CellTemplate>
+                    <AuthorizeView Roles="GalleryOwner" Context="owner">
+                        <MudTooltip Text="Satışı iptal et">
+                            <MudIconButton Icon="@Icons.Material.Rounded.Undo" Size="Size.Small" Color="Color.Error" OnClick="() => CancelAsync(context.Item)" aria-label="Satışı iptal et" />
+                        </MudTooltip>
+                    </AuthorizeView>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <EmptyState Icon="@Icons.Material.Rounded.Sell" Title="Satış bulunamadı" Text="Satışı kaydetmek için Araçlar'dan bir araç açın." />
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="SaleResponse" PageSizeOptions="[20, 50, 100]" RowsPerPageString="Sayfa başına" InfoFormat="{first_item}–{last_item} / {all_items}" />
+        </PagerContent>
+    </MudDataGrid>
+</MudPaper>
+
+@code {
+    private MudDataGrid<SaleResponse> _grid = default!;
+    private SaleTotals? _totals;
+    private string? _search;
+    private string _preset = "all";
+    private DatePresets.Range _range = new(null, null);
+
+    [SupplyParameterFromQuery] public long? CustomerId { get; set; }
+
+    private async Task<GridData<SaleResponse>> LoadAsync(GridState<SaleResponse> state, CancellationToken ct)
+    {
+        var result = await Api.GetSalesAsync(new SaleQuery
+        {
+            Search = _search,
+            From = _range.From,
+            To = _range.To,
+            CustomerId = CustomerId,
+            Page = state.Page + 1,
+            PageSize = state.PageSize,
+        });
+
+        if (!result.IsSuccess)
+            Snackbar.Add(result.Error ?? "Satışlar yüklenemedi.", Severity.Error);
+
+        _totals = result.Data?.Totals ?? new SaleTotals(0, 0, 0);
+        StateHasChanged();
+        return new GridData<SaleResponse> { Items = result.Data?.Page.Items ?? [], TotalItems = result.Data?.Page.TotalCount ?? 0 };
+    }
+
+    private Task SearchChanged(string? value) { _search = value; return _grid.ReloadServerData(); }
+    private Task RangeChanged(DatePresets.Range value) { _range = value; return _grid.ReloadServerData(); }
+    private Task ClearCustomer() { CustomerId = null; return _grid.ReloadServerData(); }
+
+    private async Task CancelAsync(SaleResponse sale)
+    {
+        if (!await ConfirmDialog.AskAsync(Dialogs, "Satışı iptal et", $"{sale.VehicleTitle} satışı silinecek ve araç tekrar stoka alınacak.", "Satışı iptal et"))
+            return;
+        var result = await Api.CancelSaleAsync(sale.Id);
+        Snackbar.Add(result.IsSuccess ? "Satış iptal edildi." : result.Error ?? "İptal edilemedi.", result.IsSuccess ? Severity.Info : Severity.Error);
+        await _grid.ReloadServerData();
+    }
+}

@@ -1,0 +1,144 @@
+@page "/admin"
+@inject GalleryApi Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<AuthorizeView Roles="SuperAdmin" Context="roleCheck">
+    <Authorized>
+<PageTitle>Galeriler · Vehicles Control</PageTitle>
+
+<PageHeader Eyebrow="Sistem yönetimi" Title="Galeriler" Subtitle="Sisteme kayıtlı galerileri yönetin, yeni galeri ve yöneticisini oluşturun.">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.AddBusiness" OnClick="CreateAsync">Yeni galeri</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudGrid Spacing="4" Class="mb-2">
+    <MudItem xs="6" md="3"><StatCard Label="Galeri" Value="@Format.Number(_summary?.GalleryCount ?? 0)" Hint="@(_summary is null ? null : $"{_summary.ActiveGalleryCount} aktif")" Icon="@Icons.Material.Rounded.Storefront" Loading="_summary is null" /></MudItem>
+    <MudItem xs="6" md="3"><StatCard Label="Kullanıcı" Value="@Format.Number(_summary?.UserCount ?? 0)" Icon="@Icons.Material.Rounded.Group" Accent="Color.Secondary" Loading="_summary is null" /></MudItem>
+    <MudItem xs="6" md="3"><StatCard Label="Araç" Value="@Format.Number(_summary?.VehicleCount ?? 0)" Icon="@Icons.Material.Rounded.DirectionsCar" Accent="Color.Info" Loading="_summary is null" /></MudItem>
+    <MudItem xs="6" md="3"><StatCard Label="Satış" Value="@Format.Number(_summary?.SaleCount ?? 0)" Icon="@Icons.Material.Rounded.Sell" Accent="Color.Success" Loading="_summary is null" /></MudItem>
+</MudGrid>
+
+<MudPaper Outlined="true" Class="overflow-hidden mt-4">
+    <div class="grid-toolbar">
+        <MudTextField T="string" Value="_search" ValueChanged="SearchChanged" Immediate="true" DebounceInterval="300" Placeholder="Galeri adı veya şehir ara…"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Class="toolbar-search" />
+    </div>
+    <MudDataGrid T="GalleryResponse" Items="_galleries" Loading="_loading" Hover="true" Elevation="0" Class="vc-grid" SortMode="SortMode.Single">
+        <Columns>
+            <TemplateColumn Title="Galeri" SortBy="g => g.Name">
+                <CellTemplate>
+                    <div class="d-flex align-center gap-3">
+                        <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@Format.Initials(context.Item.Name)</MudAvatar>
+                        <div>
+                            <div class="recent-title">@context.Item.Name</div>
+                            <div class="recent-sub">@(context.Item.City ?? "—") · @(context.Item.Phone ?? "telefon yok")</div>
+                        </div>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Yönetici" Sortable="false">
+                <CellTemplate>
+                    <div>@(context.Item.OwnerName ?? "—")</div>
+                    <div class="recent-sub">@context.Item.OwnerEmail</div>
+                </CellTemplate>
+            </TemplateColumn>
+            <PropertyColumn Property="g => g.UserCount" Title="Kullanıcı" CellClass="tabular" />
+            <PropertyColumn Property="g => g.VehicleCount" Title="Araç" CellClass="tabular" />
+            <PropertyColumn Property="g => g.SoldCount" Title="Satış" CellClass="tabular" />
+            <TemplateColumn Title="Kayıt" SortBy="g => g.CreatedDate">
+                <CellTemplate><span class="mud-text-secondary">@Format.Day(Format.ToLocal(context.Item.CreatedDate))</span></CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Durum" SortBy="g => g.IsActive">
+                <CellTemplate>
+                    <MudSwitch T="bool" Value="context.Item.IsActive" ValueChanged="v => ToggleAsync(context.Item, v)" Color="Color.Success"
+                               Label="@(context.Item.IsActive ? "Aktif" : "Pasif")" />
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="" Sortable="false" CellClass="text-right">
+                <CellTemplate>
+                    <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" OnClick="() => EditAsync(context.Item)" aria-label="Düzenle" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <EmptyState Icon="@Icons.Material.Rounded.Storefront" Title="Galeri bulunamadı" />
+        </NoRecordsContent>
+    </MudDataGrid>
+</MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudPaper Outlined="true" Class="mt-8">
+            <EmptyState Icon="@Icons.Material.Rounded.Lock" Title="Erişim yok" Text="Bu sayfa yalnızca sistem yöneticisine açıktır." />
+        </MudPaper>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private AdminSummaryResponse? _summary;
+    private List<GalleryResponse> _galleries = [];
+    private bool _loading = true;
+    private string? _search;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadSummaryAsync(), LoadAsync());
+    }
+
+    private async Task LoadSummaryAsync() => _summary = (await Api.GetAdminSummaryAsync()).Data;
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await Api.GetGalleriesAsync(_search);
+        if (result.IsSuccess)
+            _galleries = result.Data ?? [];
+        else
+            Snackbar.Add(result.Error ?? "Galeriler yüklenemedi.", Severity.Error);
+        _loading = false;
+    }
+
+    private async Task SearchChanged(string? value)
+    {
+        _search = value;
+        await LoadAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        if (await GalleryDialog.OpenAsync(Dialogs) is { } created)
+        {
+            Snackbar.Add($"{created.Name} oluşturuldu. Yönetici {created.OwnerEmail} ile giriş yapabilir.", Severity.Success);
+            await Task.WhenAll(LoadSummaryAsync(), LoadAsync());
+        }
+    }
+
+    private async Task EditAsync(GalleryResponse gallery)
+    {
+        if (await GalleryDialog.OpenAsync(Dialogs, gallery) is not null)
+        {
+            Snackbar.Add("Galeri güncellendi.", Severity.Success);
+            await LoadAsync();
+        }
+    }
+
+    private async Task ToggleAsync(GalleryResponse gallery, bool active)
+    {
+        if (!active && !await ConfirmDialog.AskAsync(Dialogs, "Galeriyi pasif yap",
+                $"{gallery.Name} pasif yapılırsa kullanıcıları giriş yapamaz. Veriler silinmez.", "Pasif yap"))
+            return;
+
+        var result = await Api.SetGalleryActiveAsync(gallery.Id, active);
+        if (result.IsSuccess)
+        {
+            gallery.IsActive = active;
+            Snackbar.Add(active ? "Galeri aktifleştirildi." : "Galeri pasif yapıldı.", Severity.Info);
+            await LoadSummaryAsync();
+        }
+        else
+        {
+            Snackbar.Add(result.Error ?? "Güncellenemedi.", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,25 @@
+@* Stacked bar: how the price splits into purchase, expenses and profit (or loss). *@
+<div class="cost-bar" role="img" aria-label="@($"Alış {Format.Money(Purchase)}, masraf {Format.Money(Expenses)}, kâr {Format.Money(Price - Purchase - Expenses)}")">
+    <div class="cost-track">
+        <span class="seg purchase" style="width:@Pct(Purchase)%"></span>
+        <span class="seg expenses" style="width:@Pct(Expenses)%"></span>
+        @if (Profit > 0) { <span class="seg profit" style="width:@Pct(Profit)%"></span> }
+    </div>
+    <div class="cost-legend">
+        <span><i class="purchase"></i>Alış <b>@Format.Money(Purchase)</b></span>
+        <span><i class="expenses"></i>Masraf <b>@Format.Money(Expenses)</b></span>
+        <span><i class="@(Profit >= 0 ? "profit" : "loss")"></i>@(Profit >= 0 ? "Kâr" : "Zarar") <b>@Format.Money(Math.Abs(Profit))</b></span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public decimal Purchase { get; set; }
+    [Parameter] public decimal Expenses { get; set; }
+    [Parameter] public decimal Price { get; set; }
+
+    private decimal Profit => Price - Purchase - Expenses;
+    private decimal Total => Math.Max(Price, Purchase + Expenses);
+
+    private string Pct(decimal part) =>
+        (Total <= 0 ? 0 : Math.Round(part / Total * 100, 2)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+}

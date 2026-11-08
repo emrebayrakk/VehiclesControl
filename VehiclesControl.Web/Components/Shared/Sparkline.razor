@@ -1,0 +1,37 @@
+@if (_points.Length > 1)
+{
+    <svg class="sparkline" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+            <linearGradient id="@_id" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="currentColor" stop-opacity=".22" />
+                <stop offset="1" stop-color="currentColor" stop-opacity="0" />
+            </linearGradient>
+        </defs>
+        <path d="@($"{Line} L100,32 L0,32 Z")" fill="url(#@_id)" />
+        <path d="@Line" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+    </svg>
+}
+
+@code {
+    [Parameter] public IEnumerable<decimal>? Values { get; set; }
+
+    private readonly string _id = "spark-" + Guid.NewGuid().ToString("N")[..8];
+    private (double X, double Y)[] _points = [];
+
+    private string Line => "M" + string.Join(" L", _points.Select(p => FormattableString.Invariant($"{p.X:0.##},{p.Y:0.##}")));
+
+    protected override void OnParametersSet()
+    {
+        var values = Values?.Select(v => (double)v).ToArray() ?? [];
+        if (values.Length < 2)
+        {
+            _points = [];
+            return;
+        }
+
+        var min = values.Min();
+        var max = values.Max();
+        var range = max - min == 0 ? 1 : max - min;
+        _points = values.Select((v, i) => (i * 100.0 / (values.Length - 1), 28 - (v - min) / range * 24)).ToArray();
+    }
+}

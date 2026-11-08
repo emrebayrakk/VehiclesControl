@@ -1,74 +1,71 @@
-﻿@inherits LayoutComponentBase
-@inject NavigationManager NavigationManager
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject ThemeState ThemeState
 
-<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
+<MudThemeProvider @ref="_themeProvider" Theme="AppTheme.Theme" IsDarkMode="ThemeState.IsDark" />
 <MudPopoverProvider />
+<MudDialogProvider CloseButton="true" BackdropClick="false" MaxWidth="MaxWidth.Small" FullWidth="true" CloseOnEscapeKey="true" />
 <MudSnackbarProvider />
-<MudDialogProvider FullWidth="true"
-                   MaxWidth="MaxWidth.ExtraSmall"
-                   CloseButton="true"
-                   BackdropClick="false"
-                   NoHeader="true"
-                   Position="DialogPosition.Center"
-                   CloseOnEscapeKey="true"
-                   BackgroundClass="my-custom-class" />
 
-<AuthorizeView>
+<AuthorizeView Context="auth">
     <Authorized>
         <MudLayout>
-            <MudAppBar Class="z-0">
-                <MudIconButton Icon="@Icons.Material.Filled.Menu" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-                <MudText style="margin-left:850px;">Hello, @context.User.Identity?.Name</MudText>
+            <MudAppBar Elevation="0" Class="app-bar" Gutters="true">
+                <MudIconButton Icon="@Icons.Material.Rounded.Menu" Edge="Edge.Start" Color="Color.Inherit" Class="mr-2"
+                               OnClick="() => _drawerOpen = !_drawerOpen" aria-label="Menüyü aç veya kapat" />
+                @if (IsSuperAdmin(auth.User))
+                {
+                    <div class="appbar-title">Sistem yönetimi</div>
+                    <MudSpacer />
+                }
+                else
+                {
+                    <GlobalSearch />
+                    <MudSpacer />
+                    <QuickCreate />
+                    <NotificationBell />
+                }
+                <MudTooltip Text="@(ThemeState.IsDark ? "Açık tema" : "Koyu tema")">
+                    <MudIconButton Icon="@(ThemeState.IsDark ? Icons.Material.Rounded.LightMode : Icons.Material.Rounded.DarkMode)"
+                                   Color="Color.Inherit" OnClick="ThemeState.ToggleAsync" aria-label="Temayı değiştir" />
+                </MudTooltip>
             </MudAppBar>
-            <MudDrawer @bind-Open="@_drawerOpen">
+
+            <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Never" Elevation="0" Variant="DrawerVariant.Responsive"
+                       Breakpoint="Breakpoint.Md" Class="app-drawer">
                 <NavMenu />
-                <MudSwitch @bind-Value="_isDarkMode" Color="Color.Primary" Class="ma-4" T="bool" Label="Toggle Light/Dark Mode" />
             </MudDrawer>
-            <MudMainContent>
-                <div style="margin-left:20px; margin-top:20px; margin-right:20px;">
+
+            <MudMainContent Class="app-main">
+                <div class="page-container">
                     @Body
                 </div>
             </MudMainContent>
         </MudLayout>
     </Authorized>
+    <Authorizing>
+        <div class="full-center"><MudProgressCircular Indeterminate="true" Color="Color.Primary" /></div>
+    </Authorizing>
     <NotAuthorized>
-        <div style="position: relative; height: 100vh; display: flex; align-items: center; justify-content: center; background-image: url('/notfound2.jpg'); background-size: cover; background-position: center; filter: blur(0.5px) brightness(0.9);">
-            <MudPaper Class="pa-6 text-center" Style="background-color: rgba(0, 0, 0, 0.7); border-radius: 12px; box-shadow: 0 10px 17px rgba(0, 0, 0, 0.3); max-width: 500px; transition: transform 0.2s;">
-                <MudText Typo="Typo.h4" GutterBottom="true" Class="mb-4" Style="color: #ffffff; font-weight: 600;">
-                    Yetkiniz Yoktur!
-                </MudText>
-                <MudText Typo="Typo.body1" GutterBottom="true" Style="color: #cccccc; font-size: 1rem;">
-                    Aradığınız sayfa için yetkiniz yoktur. Giriş yapmak için aşağıdaki butona tıklayın.
-                </MudText>
-                <MudIcon Icon="Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Large" Class="my-3" />
-                <div style="display: flex; justify-content: center;">
-                    <MudButton Variant="Variant.Filled" OnClick="@(() => NavigationManager.NavigateTo("/login"))"
-                               style="
-                                background: linear-gradient(135deg, #6a11cb, #2575fc);
-                                color: white;
-                                padding: 12px 25px;
-                                font-size: 1rem;
-                                border-radius: 30px;
-                                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-                                transition: all 0.3s ease;
-                                font-weight: 600;
-                                letter-spacing: 0.5px;">
-                        Giriş Yap
-                    </MudButton>
-                </div>
-            </MudPaper>
-        </div>
+        <RedirectToLogin />
     </NotAuthorized>
 </AuthorizeView>
 
-
 @code {
-    bool _drawerOpen = true;
-    private MudTheme _theme = new();
-    private bool _isDarkMode = true;
+    private MudThemeProvider? _themeProvider;
+    private bool _drawerOpen = true;
 
-    void DrawerToggle()
+    protected override void OnInitialized() => ThemeState.Changed += OnThemeChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _drawerOpen = !_drawerOpen;
+        if (firstRender && _themeProvider is not null)
+            await ThemeState.EnsureLoadedAsync(_themeProvider);
     }
+
+    private static bool IsSuperAdmin(System.Security.Claims.ClaimsPrincipal user) => user.IsInRole(nameof(UserRole.SuperAdmin));
+
+    private void OnThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => ThemeState.Changed -= OnThemeChanged;
 }

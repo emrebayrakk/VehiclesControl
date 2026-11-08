@@ -1,0 +1,104 @@
+@page "/expenses"
+@inject GalleryApi Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<PageTitle>Masraflar · Vehicles Control</PageTitle>
+
+<PageHeader Eyebrow="Operasyon" Title="Masraflar" Subtitle="Araçlara ve galeriye ait tüm giderler.">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Add" OnClick="CreateAsync">Masraf ekle</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Outlined="true" Class="overflow-hidden">
+    <div class="grid-toolbar">
+        <MudTextField T="string" Value="_search" ValueChanged="SearchChanged" Immediate="true" DebounceInterval="300" Placeholder="Açıklama, araç veya plaka ara…"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Class="toolbar-search" />
+        <MudSelect T="ExpenseCategory?" Value="_category" ValueChanged="CategoryChanged" Label="Kategori" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" Class="toolbar-sort">
+            @foreach (var c in Enum.GetValues<ExpenseCategory>())
+            {
+                <MudSelectItem T="ExpenseCategory?" Value="c">@Labels.Text(c)</MudSelectItem>
+            }
+        </MudSelect>
+        <DatePresets @bind-Value="_preset" RangeChanged="RangeChanged" />
+        <MudSpacer />
+        <div class="toolbar-total">Toplam <b class="tabular">@Format.Money(_total)</b></div>
+    </div>
+    <MudDataGrid @ref="_grid" T="ExpenseResponse" ServerData="LoadAsync" Hover="true" Elevation="0" Class="vc-grid" SortMode="SortMode.None" RowsPerPage="20">
+        <Columns>
+            <TemplateColumn Title="Tarih"><CellTemplate><span class="tabular">@Format.Day(context.Item.Date)</span></CellTemplate></TemplateColumn>
+            <TemplateColumn Title="Kategori"><CellTemplate><MudChip T="string" Size="Size.Small" Variant="Variant.Text">@Labels.Text(context.Item.Category)</MudChip></CellTemplate></TemplateColumn>
+            <TemplateColumn Title="Araç">
+                <CellTemplate>
+                    @if (context.Item.VehicleId is { } vid)
+                    {
+                        <a class="link" href="@($"/vehicles/{vid}")">@context.Item.VehicleTitle</a>
+                    }
+                    else
+                    {
+                        <span class="mud-text-secondary">Genel gider</span>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Açıklama"><CellTemplate><span class="mud-text-secondary">@(context.Item.Description ?? "—")</span></CellTemplate></TemplateColumn>
+            <TemplateColumn Title="Tutar" HeaderClass="text-right" CellClass="text-right"><CellTemplate><b class="tabular">@Format.Money(context.Item.Amount)</b></CellTemplate></TemplateColumn>
+            <TemplateColumn Title="" CellClass="text-right">
+                <CellTemplate>
+                    <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" OnClick="() => EditAsync(context.Item)" aria-label="Düzenle" />
+                    <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteAsync(context.Item)" aria-label="Sil" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent><EmptyState Icon="@Icons.Material.Rounded.ReceiptLong" Title="Masraf bulunamadı" /></NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="ExpenseResponse" PageSizeOptions="[20, 50, 100]" RowsPerPageString="Sayfa başına" InfoFormat="{first_item}–{last_item} / {all_items}" />
+        </PagerContent>
+    </MudDataGrid>
+</MudPaper>
+
+@code {
+    private MudDataGrid<ExpenseResponse> _grid = default!;
+    private decimal _total;
+    private string? _search;
+    private ExpenseCategory? _category;
+    private string _preset = "all";
+    private DatePresets.Range _range = new(null, null);
+
+    private async Task<GridData<ExpenseResponse>> LoadAsync(GridState<ExpenseResponse> state, CancellationToken ct)
+    {
+        var result = await Api.GetExpensesAsync(new ExpenseQuery
+        {
+            Search = _search, Category = _category, From = _range.From, To = _range.To,
+            Page = state.Page + 1, PageSize = state.PageSize,
+        });
+        if (!result.IsSuccess)
+            Snackbar.Add(result.Error ?? "Masraflar yüklenemedi.", Severity.Error);
+        _total = result.Data?.Total ?? 0;
+        StateHasChanged();
+        return new GridData<ExpenseResponse> { Items = result.Data?.Page.Items ?? [], TotalItems = result.Data?.Page.TotalCount ?? 0 };
+    }
+
+    private Task SearchChanged(string? value) { _search = value; return _grid.ReloadServerData(); }
+    private Task CategoryChanged(ExpenseCategory? value) { _category = value; return _grid.ReloadServerData(); }
+    private Task RangeChanged(DatePresets.Range value) { _range = value; return _grid.ReloadServerData(); }
+
+    private async Task CreateAsync()
+    {
+        if (await ExpenseDialog.OpenAsync(Dialogs) is not null) { Snackbar.Add("Masraf eklendi.", Severity.Success); await _grid.ReloadServerData(); }
+    }
+
+    private async Task EditAsync(ExpenseResponse expense)
+    {
+        if (await ExpenseDialog.OpenAsync(Dialogs, expense) is not null) { Snackbar.Add("Masraf güncellendi.", Severity.Success); await _grid.ReloadServerData(); }
+    }
+
+    private async Task DeleteAsync(ExpenseResponse expense)
+    {
+        if (!await ConfirmDialog.AskAsync(Dialogs, "Masrafı sil", $"{Labels.Text(expense.Category)} — {Format.Money(expense.Amount)} silinecek."))
+            return;
+        var result = await Api.DeleteExpenseAsync(expense.Id);
+        Snackbar.Add(result.IsSuccess ? "Masraf silindi." : result.Error ?? "Silinemedi.", result.IsSuccess ? Severity.Info : Severity.Error);
+        await _grid.ReloadServerData();
+    }
+}

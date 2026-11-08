@@ -1,0 +1,106 @@
+@inject GalleryApi Api
+@inject IDialogService Dialogs
+
+<MudDialog>
+    <TitleContent>
+        <DialogHeader Icon="@Icons.Material.Rounded.Sell" Title="Satışı kaydet" Subtitle="@Vehicle.Title" />
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudGrid Spacing="3" Class="pt-2">
+                <MudItem xs="12">
+                    <div class="d-flex align-start gap-2">
+                        <div class="flex-grow-1"><CustomerPicker @bind-Value="_customer" /></div>
+                        <MudTooltip Text="Yeni müşteri ekle">
+                            <MudIconButton Icon="@Icons.Material.Rounded.PersonAdd" Variant="Variant.Outlined" Color="Color.Primary" Class="mt-1"
+                                           OnClick="NewCustomerAsync" aria-label="Yeni müşteri ekle" />
+                        </MudTooltip>
+                    </div>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="_model.SaleDate" Label="Satış tarihi" Variant="Variant.Outlined" Culture="Format.Turkish"
+                                   DateFormat="dd.MM.yyyy" Required="true" MaxDate="DateTime.Today" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="PaymentMethod" @bind-Value="_model.PaymentMethod" Label="Ödeme şekli" Variant="Variant.Outlined">
+                        @foreach (var method in Enum.GetValues<PaymentMethod>())
+                        {
+                            <MudSelectItem Value="method">@Labels.Text(method)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6"><MoneyField @bind-Value="_model.SalePrice" Label="Satış fiyatı" Required="true" /></MudItem>
+                <MudItem xs="12" sm="6"><MoneyField @bind-Value="_model.Deposit" Label="Alınan kapora" HelperText="Opsiyonel" /></MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="_model.Notes" Label="Notlar" Variant="Variant.Outlined" Lines="2" Sizing="InputSizing.Auto" MaxLength="2000" /></MudItem>
+            </MudGrid>
+
+            <div class="profit-preview mt-4">
+                <div><span>Toplam maliyet</span><b>@Format.Money(Vehicle.TotalCost)</b></div>
+                <div><span>Tahmini kâr</span><b class="@(Profit >= 0 ? "text-profit" : "text-loss")">@Format.Money(Profit)</b></div>
+            </div>
+
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Text" Dense="true" Class="mt-3">@_error</MudAlert>
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()" Disabled="_saving">Vazgeç</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="SaveAsync" Disabled="_saving" StartIcon="@Icons.Material.Rounded.Check">
+            @(_saving ? "Kaydediliyor…" : "Satışı tamamla")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter, EditorRequired] public VehicleDetail Vehicle { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private readonly SaleRequest _model = new();
+    private CustomerResponse? _customer;
+    private bool _saving;
+    private string? _error;
+
+    private decimal Profit => _model.SalePrice - Vehicle.TotalCost;
+
+    protected override void OnInitialized()
+    {
+        _model.VehicleId = Vehicle.Id;
+        _model.SalePrice = Vehicle.ListPrice;
+    }
+
+    private async Task NewCustomerAsync()
+    {
+        if (await CustomerDialog.OpenAsync(Dialogs) is { } created)
+            _customer = created;
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid || _customer is null)
+        {
+            _error ??= _customer is null ? "Müşteri seçin." : null;
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+        _model.CustomerId = _customer.Id;
+        var result = await Api.CreateSaleAsync(_model);
+        _saving = false;
+
+        if (result is { IsSuccess: true, Data: { } sale })
+            MudDialog.Close(DialogResult.Ok(sale));
+        else
+            _error = result.Error;
+    }
+
+    public static async Task<SaleResponse?> OpenAsync(IDialogService dialogs, VehicleDetail vehicle)
+    {
+        var dialog = await dialogs.ShowAsync<SaleDialog>("Satış", new DialogParameters<SaleDialog> { { x => x.Vehicle, vehicle } });
+        return (await dialog.Result) is { Canceled: false, Data: SaleResponse sale } ? sale : null;
+    }
+}

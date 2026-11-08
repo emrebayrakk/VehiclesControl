@@ -1,51 +1,58 @@
 using Hangfire;
 using HangfireBasicAuthenticationFilter;
 using Microsoft.EntityFrameworkCore;
-using VehiclesControl.Application.Bus;
+using VehiclesControl.Application.Abstractions;
+using VehiclesControl.Application.Notifications;
 using VehiclesControl.Data.Context;
-using VehiclesControl.Data.MapperProfile;
-using VehiclesControl.Data.Repositories.EntityFramework;
-using VehiclesControl.Domain.Interfaces.EntityFramework;
 using VehiclesControl.Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
 
-builder.Services.AddDbContext<VehiclesControlContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Background work runs outside any gallery; the generator bypasses tenant filters on purpose.
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<ITenantContext, SystemTenantContext>();
+builder.Services.AddDbContext<VehiclesControlContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<VehiclesControlContext>());
+builder.Services.AddScoped<ReminderNotificationGenerator>();
+builder.Services.AddScoped<ReminderJob>();
 
-builder.Services.AddAutoMapper(typeof(MapperProfile));
-builder.Services.AddTransient<IBusRepo, BusRepo>();
-builder.Services.AddTransient<IBusService, BusService>();
-
-builder.Services.AddTransient<HangfireJobService>();
-
-builder.Services.AddHangfire(x =>
-{
-    var conn = "Data Source=DESKTOP-P87BUPQ;Initial Catalog=Hangfire;Integrated Security=True;Connect Timeout=30;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False";
-    x.UseSqlServerStorage(conn);
-});
+// Hangfire keeps its own tables (schema "HangFire") in the application database.
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(connectionString));
 builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+app.Services.GetRequiredService<IRecurringJobManager>().AddOrUpdate<ReminderJob>(
+    "reminder-notifications",
+    job => job.RunAsync(),
+    "0 8 * * *",
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Local });
+
+var dashboardPassword = app.Configuration["HangfireSettings:Password"];
+if (string.IsNullOrWhiteSpace(dashboardPassword))
 {
-    var hangfireJobService = scope.ServiceProvider.GetRequiredService<HangfireJobService>();
-    hangfireJobService.ScheduleJobs(); 
+    app.Logger.LogWarning("HangfireSettings:Password is empty; the dashboard is not exposed.");
+}
+else
+{
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization =
+        [
+            new HangfireCustomBasicAuthenticationFilter
+            {
+                User = app.Configuration["HangfireSettings:UserName"],
+                Pass = dashboardPassword,
+            },
+        ],
+    });
 }
 
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
-{
-    Authorization = new[]
-    {
-        new HangfireCustomBasicAuthenticationFilter
-        {
-            User = builder.Configuration.GetSection("HangfireSettings:UserName").Value,
-            Pass = builder.Configuration.GetSection("HangfireSettings:Password").Value
-        }
-    }
-});
-
-app.UseHttpsRedirection();
-
+app.MapGet("/", () => Results.Redirect("/hangfire"));
 app.Run();

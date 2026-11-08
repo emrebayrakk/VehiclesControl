@@ -1,0 +1,34 @@
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Rounded.WarningAmber" Color="Color.Error" />
+            <MudText Typo="Typo.h6">@Title</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudText>@Message</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()">Vazgeç</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="() => MudDialog.Close(DialogResult.Ok(true))">@ConfirmText</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string Title { get; set; } = "Emin misiniz?";
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public string ConfirmText { get; set; } = "Sil";
+
+    public static async Task<bool> AskAsync(IDialogService dialogs, string title, string message, string confirmText = "Sil")
+    {
+        var dialog = await dialogs.ShowAsync<ConfirmDialog>(title, new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Title, title },
+            { x => x.Message, message },
+            { x => x.ConfirmText, confirmText },
+        }, new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = false });
+        var result = await dialog.Result;
+        return result is { Canceled: false };
+    }
+}

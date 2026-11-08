@@ -1,0 +1,98 @@
+@inject GalleryApi Api
+
+<MudDialog>
+    <TitleContent>
+        <DialogHeader Icon="@Icons.Material.Rounded.ReceiptLong" Title="@(Expense is null ? "Yeni masraf" : "Masrafı düzenle")" Subtitle="@FixedVehicleTitle" />
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudGrid Spacing="3" Class="pt-2">
+                @if (FixedVehicleId is null)
+                {
+                    <MudItem xs="12">
+                        <VehiclePicker @bind-Value="_vehicle" Label="Araç (opsiyonel)" HelperText="Boş bırakırsanız genel gider olarak kaydedilir." />
+                    </MudItem>
+                }
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="ExpenseCategory" @bind-Value="_model.Category" Label="Kategori" Variant="Variant.Outlined">
+                        @foreach (var category in Enum.GetValues<ExpenseCategory>())
+                        {
+                            <MudSelectItem Value="category">@Labels.Text(category)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="_model.Date" Label="Tarih" Variant="Variant.Outlined" Culture="Format.Turkish" DateFormat="dd.MM.yyyy" Required="true" />
+                </MudItem>
+                <MudItem xs="12"><MoneyField @bind-Value="_model.Amount" Label="Tutar" Required="true" /></MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="_model.Description" Label="Açıklama" Variant="Variant.Outlined" MaxLength="500" /></MudItem>
+            </MudGrid>
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Text" Dense="true" Class="mt-3">@_error</MudAlert>
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()" Disabled="_saving">Vazgeç</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="_saving">@(_saving ? "Kaydediliyor…" : "Kaydet")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public ExpenseResponse? Expense { get; set; }
+    [Parameter] public long? FixedVehicleId { get; set; }
+    [Parameter] public string? FixedVehicleTitle { get; set; }
+
+    private MudForm _form = default!;
+    private ExpenseRequest _model = new();
+    private VehicleOption? _vehicle;
+    private bool _saving;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        if (Expense is { } e)
+        {
+            _model = new ExpenseRequest { VehicleId = e.VehicleId, Category = e.Category, Amount = e.Amount, Date = e.Date, Description = e.Description };
+            if (e.VehicleId is { } id && FixedVehicleId is null)
+                _vehicle = new VehicleOption(id, e.VehicleTitle ?? $"#{id}", null, VehicleStatus.InStock, 0);
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        if (_model.Amount <= 0)
+        {
+            _error = "Tutar sıfırdan büyük olmalıdır.";
+            return;
+        }
+
+        _model.VehicleId = FixedVehicleId ?? _vehicle?.Id;
+        _saving = true;
+        _error = null;
+        var result = Expense is null ? await Api.CreateExpenseAsync(_model) : await Api.UpdateExpenseAsync(Expense.Id, _model);
+        _saving = false;
+
+        if (result is { IsSuccess: true, Data: { } saved })
+            MudDialog.Close(DialogResult.Ok(saved));
+        else
+            _error = result.Error;
+    }
+
+    public static async Task<ExpenseResponse?> OpenAsync(IDialogService dialogs, ExpenseResponse? expense = null, long? vehicleId = null, string? vehicleTitle = null)
+    {
+        var dialog = await dialogs.ShowAsync<ExpenseDialog>("Masraf", new DialogParameters<ExpenseDialog>
+        {
+            { x => x.Expense, expense },
+            { x => x.FixedVehicleId, vehicleId },
+            { x => x.FixedVehicleTitle, vehicleTitle },
+        });
+        return (await dialog.Result) is { Canceled: false, Data: ExpenseResponse saved } ? saved : null;
+    }
+}

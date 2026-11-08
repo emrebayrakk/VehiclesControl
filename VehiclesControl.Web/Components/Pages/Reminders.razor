@@ -1,0 +1,105 @@
+@page "/reminders"
+@inject GalleryApi Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<PageTitle>Hatırlatıcılar · Vehicles Control</PageTitle>
+
+<PageHeader Eyebrow="Operasyon" Title="Hatırlatıcılar" Subtitle="Muayene, trafik sigortası, kasko ve bakım tarihleri. Son 14 gün kala bildirim alırsınız.">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Add" OnClick="CreateAsync">Hatırlatıcı ekle</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Outlined="true" Class="overflow-hidden">
+    <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" ActivePanelIndex="_tab" ActivePanelIndexChanged="TabChanged">
+        <MudTabPanel Text="Yaklaşan" Icon="@Icons.Material.Rounded.Upcoming" />
+        <MudTabPanel Text="Geciken" Icon="@Icons.Material.Rounded.Warning" />
+        <MudTabPanel Text="Tamamlanan" Icon="@Icons.Material.Rounded.TaskAlt" />
+        <MudTabPanel Text="Tümü" Icon="@Icons.Material.Rounded.List" />
+    </MudTabs>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_items.Count == 0)
+    {
+        <EmptyState Icon="@Icons.Material.Rounded.EventAvailable" Title="@(_tab == 1 ? "Geciken iş yok" : "Kayıt yok")" Text="@(_tab == 1 ? "Harika, her şey zamanında." : null)" />
+    }
+    else
+    {
+        <div class="reminder-list">
+            @foreach (var r in _items)
+            {
+                <div class="@($"recent-row {(r.IsCompleted ? "is-done" : "")}")">
+                    <div class="row-icon"><MudIcon Icon="@Labels.Icon(r.Type)" Size="Size.Small" /></div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="recent-title">@Labels.Text(r.Type) · <a class="link" href="@($"/vehicles/{r.VehicleId}")">@r.VehicleTitle</a></div>
+                        <div class="recent-sub text-truncate">@(r.Plate ?? "Plakasız") · @Format.Day(r.DueDate)@(r.Notes is null ? "" : $" · {r.Notes}")</div>
+                    </div>
+                    @if (r.IsCompleted)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Success" Icon="@Icons.Material.Rounded.Check">@Format.Day(r.CompletedDate)</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@Labels.DueColor(r.DueDate)">@Format.DueText(r.DueDate)</MudChip>
+                        <MudTooltip Text="Tamamlandı">
+                            <MudIconButton Icon="@Icons.Material.Rounded.TaskAlt" Size="Size.Small" Color="Color.Success" OnClick="() => CompleteAsync(r)" aria-label="Tamamla" />
+                        </MudTooltip>
+                        <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" OnClick="() => EditAsync(r)" aria-label="Düzenle" />
+                    }
+                    <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteAsync(r)" aria-label="Sil" />
+                </div>
+            }
+        </div>
+    }
+</MudPaper>
+
+@code {
+    private static readonly ReminderScope[] Scopes = [ReminderScope.Upcoming, ReminderScope.Overdue, ReminderScope.Completed, ReminderScope.All];
+    private List<ReminderResponse> _items = [];
+    private int _tab;
+    private bool _loading = true;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await Api.GetRemindersAsync(new ReminderQuery { Scope = Scopes[_tab] });
+        _items = result.Data ?? [];
+        if (!result.IsSuccess)
+            Snackbar.Add(result.Error ?? "Hatırlatıcılar yüklenemedi.", Severity.Error);
+        _loading = false;
+    }
+
+    private Task TabChanged(int index) { _tab = index; return LoadAsync(); }
+
+    private async Task CreateAsync()
+    {
+        if (await ReminderDialog.OpenAsync(Dialogs) is not null) { Snackbar.Add("Hatırlatıcı eklendi.", Severity.Success); await LoadAsync(); }
+    }
+
+    private async Task EditAsync(ReminderResponse reminder)
+    {
+        if (await ReminderDialog.OpenAsync(Dialogs, reminder) is not null) { Snackbar.Add("Hatırlatıcı güncellendi.", Severity.Success); await LoadAsync(); }
+    }
+
+    private async Task CompleteAsync(ReminderResponse reminder)
+    {
+        var result = await Api.CompleteReminderAsync(reminder.Id);
+        Snackbar.Add(result.IsSuccess ? $"{Labels.Text(reminder.Type)} tamamlandı." : result.Error ?? "Güncellenemedi.", result.IsSuccess ? Severity.Success : Severity.Error);
+        await LoadAsync();
+    }
+
+    private async Task DeleteAsync(ReminderResponse reminder)
+    {
+        if (!await ConfirmDialog.AskAsync(Dialogs, "Hatırlatıcıyı sil", $"{Labels.Text(reminder.Type)} — {reminder.VehicleTitle} silinecek."))
+            return;
+        var result = await Api.DeleteReminderAsync(reminder.Id);
+        Snackbar.Add(result.IsSuccess ? "Hatırlatıcı silindi." : result.Error ?? "Silinemedi.", result.IsSuccess ? Severity.Info : Severity.Error);
+        await LoadAsync();
+    }
+}

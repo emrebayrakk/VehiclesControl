@@ -1,0 +1,462 @@
+@page "/vehicles/{Id:long}"
+@inject GalleryApi Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>@(_v?.Title ?? "Araç") · Vehicles Control</PageTitle>
+
+@if (_v is null)
+{
+    @if (_error is not null)
+    {
+        <div class="card mt-6">
+            <EmptyState Icon="@Icons.Material.Rounded.SearchOff" Title="Araç bulunamadı" Text="@_error">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/vehicles">Araçlara dön</MudButton>
+            </EmptyState>
+        </div>
+    }
+    else
+    {
+        <MudSkeleton Width="40%" Height="44px" />
+        <div class="vd-layout mt-4">
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Class="vd-gallery-skeleton" />
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="360px" Class="rounded-lg" />
+        </div>
+    }
+}
+else
+{
+    var margin = _v.ListPrice - _v.TotalCost;
+    var sold = _v.Sale is not null;
+
+    <a class="back-link" href="/vehicles"><MudIcon Icon="@Icons.Material.Rounded.ArrowBack" Size="Size.Small" /> Araçlar</a>
+
+    <header class="vd-header">
+        <div class="min-w-0">
+            <div class="vd-meta">
+                <span class="@($"status-pill inline {_v.Status.ToString().ToLowerInvariant()}")">@Labels.Text(_v.Status)</span>
+                @if (_v.Plate is not null) { <span class="plate">@_v.Plate</span> }
+                <span class="vd-meta-text">#@_v.Id</span>
+                @if (!sold) { <span class="vd-meta-text">· @Format.DaysSince(_v.PurchaseDate) gündür stokta</span> }
+            </div>
+            <h1 class="page-title">@_v.Year @_v.Brand @_v.Model</h1>
+            @if (_v.Trim is not null) { <div class="vd-trim">@_v.Trim</div> }
+        </div>
+        <div class="page-actions">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Rounded.Edit" Href="@($"/vehicles/{_v.Id}/edit")">Düzenle</MudButton>
+            <AuthorizeView Roles="GalleryOwner">
+                @if (!sold)
+                {
+                    <MudTooltip Text="Aracı sil">
+                        <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Color="Color.Error" Variant="Variant.Outlined" OnClick="DeleteAsync" aria-label="Aracı sil" />
+                    </MudTooltip>
+                }
+            </AuthorizeView>
+        </div>
+    </header>
+
+    <div class="vd-layout">
+        <div class="vd-main">
+            @* ---------- Gallery ---------- *@
+            <section class="vd-gallery">
+                @if (_v.Photos.Count == 0)
+                {
+                    <div class="vd-gallery-empty">
+                        <div class="media-placeholder">
+                            <MudIcon Icon="@Icons.Material.Rounded.DirectionsCar" />
+                            <span lang="en">@_v.Brand</span>
+                        </div>
+                        <div class="vd-gallery-empty-cta">
+                            <MudText Typo="Typo.body2" Class="mb-2">Bu aracın henüz fotoğrafı yok.</MudText>
+                            <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="UploadAsync" Accept=".jpg,.jpeg,.png,.webp" MaximumFileCount="10">
+                                <CustomContent Context="upload">
+                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.AddPhotoAlternate"
+                                               Disabled="_uploading" OnClick="upload.OpenFilePickerAsync">@(_uploading ? "Yükleniyor…" : "Fotoğraf yükle")</MudButton>
+                                </CustomContent>
+                            </MudFileUpload>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary mt-2 d-block">JPG, PNG veya WEBP · en fazla 8 MB · 20 fotoğraf</MudText>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    var index = Math.Clamp(_photoIndex, 0, _v.Photos.Count - 1);
+                    var photo = _v.Photos[index];
+                    <div class="vd-stage">
+                        <img src="@Format.Media(photo.Url)" alt="@_v.Title" />
+                        @if (_v.Photos.Count > 1)
+                        {
+                            <button type="button" class="vd-nav prev" aria-label="Önceki fotoğraf" @onclick="() => Step(-1)"><MudIcon Icon="@Icons.Material.Rounded.ChevronLeft" /></button>
+                            <button type="button" class="vd-nav next" aria-label="Sonraki fotoğraf" @onclick="() => Step(1)"><MudIcon Icon="@Icons.Material.Rounded.ChevronRight" /></button>
+                        }
+                        <div class="vd-stage-top">
+                            <span class="vd-counter"><MudIcon Icon="@Icons.Material.Rounded.PhotoCamera" Size="Size.Small" /> @(index + 1) / @_v.Photos.Count</span>
+                            @if (photo.IsCover) { <span class="vd-counter"><MudIcon Icon="@Icons.Material.Rounded.Star" Size="Size.Small" /> Kapak</span> }
+                        </div>
+                        <div class="vd-stage-actions">
+                            @if (!photo.IsCover)
+                            {
+                                <button type="button" class="glass-btn" @onclick="() => SetCoverAsync(photo)"><MudIcon Icon="@Icons.Material.Rounded.StarOutline" Size="Size.Small" /> Kapak yap</button>
+                            }
+                            <button type="button" class="glass-btn danger" aria-label="Fotoğrafı sil" @onclick="() => DeletePhotoAsync(photo)"><MudIcon Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" /></button>
+                        </div>
+                    </div>
+                    <div class="vd-thumbs">
+                        @for (var i = 0; i < _v.Photos.Count; i++)
+                        {
+                            var thumbIndex = i;
+                            <button type="button" class="@($"vd-thumb {(i == index ? "active" : "")}")" aria-label="@($"Fotoğraf {i + 1}")" @onclick="() => _photoIndex = thumbIndex">
+                                <img src="@Format.Media(_v.Photos[i].Url)" alt="" loading="lazy" />
+                            </button>
+                        }
+                        <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="UploadAsync" Accept=".jpg,.jpeg,.png,.webp" MaximumFileCount="10">
+                            <CustomContent Context="upload">
+                                <button type="button" class="vd-thumb add" disabled="@_uploading" aria-label="Fotoğraf ekle" @onclick="upload.OpenFilePickerAsync">
+                                    @if (_uploading) { <MudProgressCircular Size="Size.Small" Indeterminate="true" /> } else { <MudIcon Icon="@Icons.Material.Rounded.Add" /> }
+                                </button>
+                            </CustomContent>
+                        </MudFileUpload>
+                    </div>
+                }
+            </section>
+
+            @* ---------- Key specs ---------- *@
+            <section class="card">
+                <div class="card-head"><h2 class="card-title">Öne çıkan bilgiler</h2></div>
+                <div class="spec-tiles">
+                    <div class="spec-tile"><MudIcon Icon="@Icons.Material.Rounded.CalendarMonth" /><span>Model yılı</span><b>@_v.Year</b></div>
+                    <div class="spec-tile"><MudIcon Icon="@Icons.Material.Rounded.Speed" /><span>Kilometre</span><b>@Format.Km(_v.Kilometers)</b></div>
+                    <div class="spec-tile"><MudIcon Icon="@Icons.Material.Rounded.LocalGasStation" /><span>Yakıt</span><b>@Labels.Text(_v.FuelType)</b></div>
+                    <div class="spec-tile"><MudIcon Icon="@Icons.Material.Rounded.Settings" /><span>Vites</span><b>@Labels.Text(_v.Transmission)</b></div>
+                    <div class="spec-tile"><MudIcon Icon="@Icons.Material.Rounded.DirectionsCar" /><span>Kasa</span><b>@Labels.Text(_v.BodyType)</b></div>
+                    <div class="spec-tile"><ColorSwatch Color="@_v.Color" Size="20" /><span>Renk</span><b>@_v.Color</b></div>
+                    <div class="spec-tile"><MudIcon Icon="@Icons.Material.Rounded.Memory" /><span>Motor hacmi</span><b>@(_v.EngineVolume is { } cc ? $"{cc} cc" : "—")</b></div>
+                    <div class="spec-tile"><MudIcon Icon="@Icons.Material.Rounded.Bolt" /><span>Motor gücü</span><b>@(_v.EnginePower is { } hp ? $"{hp} HP" : "—")</b></div>
+                </div>
+                @if (_v.Vin is not null)
+                {
+                    <div class="vin-row">
+                        <span>Şasi numarası</span>
+                        <code>@_v.Vin</code>
+                    </div>
+                }
+            </section>
+
+            @* ---------- Damage ---------- *@
+            <section class="card">
+                <div class="card-head">
+                    <h2 class="card-title">Hasar ve ekspertiz</h2>
+                    @if (_v.DamageRecordAmount is null && _v.PaintedParts is null && _v.ReplacedParts is null)
+                    {
+                        <span class="soft-badge success"><MudIcon Icon="@Icons.Material.Rounded.Verified" Size="Size.Small" /> Kayıt yok</span>
+                    }
+                </div>
+                <div class="damage-grid">
+                    <div class="damage-box">
+                        <span>Tramer kaydı</span>
+                        <b class="@(_v.DamageRecordAmount is > 0 ? "text-loss" : "text-profit")">@(Format.Money(_v.DamageRecordAmount) ?? "Yok")</b>
+                    </div>
+                    <div class="damage-box">
+                        <span>Boyalı parçalar</span>
+                        <div class="part-chips">
+                            @if (_v.PaintedParts is null) { <em>Yok</em> }
+                            else { @foreach (var part in Split(_v.PaintedParts)) { <span class="part painted">@part</span> } }
+                        </div>
+                    </div>
+                    <div class="damage-box">
+                        <span>Değişen parçalar</span>
+                        <div class="part-chips">
+                            @if (_v.ReplacedParts is null) { <em>Yok</em> }
+                            else { @foreach (var part in Split(_v.ReplacedParts)) { <span class="part replaced">@part</span> } }
+                        </div>
+                    </div>
+                </div>
+                @if (_v.Notes is not null)
+                {
+                    <div class="note-box"><MudIcon Icon="@Icons.Material.Rounded.StickyNote2" Size="Size.Small" /><p class="pre-line">@_v.Notes</p></div>
+                }
+            </section>
+
+            @* ---------- Expenses & reminders ---------- *@
+            <section class="card no-pad">
+                <MudTabs Elevation="0" ApplyEffectsToContainer="true" TabPanelsClass="pa-5" Rounded="false" Class="vd-tabs">
+                    <MudTabPanel Text="@($"Masraflar ({_v.Expenses.Count})")" Icon="@Icons.Material.Rounded.ReceiptLong">
+                        <div class="d-flex align-center justify-space-between mb-3 gap-2 flex-wrap">
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary">Toplam <b>@Format.Money(_v.TotalExpenses)</b> · aracın maliyetine eklenir</MudText>
+                            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Rounded.Add" OnClick="AddExpenseAsync">Masraf ekle</MudButton>
+                        </div>
+                        @if (_v.Expenses.Count == 0)
+                        {
+                            <EmptyState Icon="@Icons.Material.Rounded.ReceiptLong" Title="Masraf yok" Text="Ekspertiz, bakım, boya gibi giderleri ekleyin." />
+                        }
+                        else
+                        {
+                            <div class="recent-list">
+                                @foreach (var e in _v.Expenses)
+                                {
+                                    <div class="recent-row">
+                                        <div class="row-icon"><MudIcon Icon="@Icons.Material.Rounded.Receipt" Size="Size.Small" /></div>
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="recent-title">@Labels.Text(e.Category)</div>
+                                            <div class="recent-sub text-truncate">@Format.Day(e.Date)@(e.Description is null ? "" : $" · {e.Description}")</div>
+                                        </div>
+                                        <div class="recent-title tabular">@Format.Money(e.Amount)</div>
+                                        <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" OnClick="() => EditExpenseAsync(e)" aria-label="Düzenle" />
+                                        <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteExpenseAsync(e)" aria-label="Sil" />
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </MudTabPanel>
+                    <MudTabPanel Text="@($"Hatırlatıcılar ({_v.Reminders.Count(r => !r.IsCompleted)})")" Icon="@Icons.Material.Rounded.EventNote">
+                        <div class="d-flex align-center justify-space-between mb-3 gap-2 flex-wrap">
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary">Muayene, sigorta, kasko ve bakım tarihleri</MudText>
+                            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Rounded.Add" OnClick="AddReminderAsync">Hatırlatıcı ekle</MudButton>
+                        </div>
+                        @if (_v.Reminders.Count == 0)
+                        {
+                            <EmptyState Icon="@Icons.Material.Rounded.EventAvailable" Title="Hatırlatıcı yok" />
+                        }
+                        else
+                        {
+                            <div class="timeline">
+                                @foreach (var r in _v.Reminders)
+                                {
+                                    <div class="@($"timeline-item static {(r.IsCompleted ? "is-done" : "")}")">
+                                        <span class="@($"timeline-dot {(r.IsCompleted ? "" : DueClass(r.DueDate))}")"><MudIcon Icon="@Labels.Icon(r.Type)" Size="Size.Small" /></span>
+                                        <span class="min-w-0 flex-grow-1">
+                                            <span class="timeline-title">@Labels.Text(r.Type)</span>
+                                            <span class="timeline-sub">@Format.Day(r.DueDate)@(r.Notes is null ? "" : $" · {r.Notes}")</span>
+                                        </span>
+                                        @if (r.IsCompleted)
+                                        {
+                                            <span class="due-badge done">Tamamlandı</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="@($"due-badge {DueClass(r.DueDate)}")">@Format.DueText(r.DueDate)</span>
+                                            <MudTooltip Text="Tamamlandı olarak işaretle">
+                                                <MudIconButton Icon="@Icons.Material.Rounded.TaskAlt" Size="Size.Small" Color="Color.Success" OnClick="() => CompleteReminderAsync(r)" aria-label="Tamamla" />
+                                            </MudTooltip>
+                                        }
+                                        <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteReminderAsync(r)" aria-label="Sil" />
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </MudTabPanel>
+                </MudTabs>
+            </section>
+        </div>
+
+        @* ---------- Sticky side panel ---------- *@
+        <aside class="vd-side">
+            @if (_v.Sale is { } sale)
+            {
+                var profit = sale.SalePrice - _v.TotalCost;
+                <section class="card price-card sold">
+                    <div class="price-card-label"><MudIcon Icon="@Icons.Material.Rounded.CheckCircle" Size="Size.Small" /> Satıldı · @Format.Day(sale.SaleDate)</div>
+                    <div class="price-card-value">@Format.Money(sale.SalePrice)</div>
+                    <div class="@($"profit-badge {(profit >= 0 ? "up" : "down")}")">
+                        <MudIcon Icon="@(profit >= 0 ? Icons.Material.Rounded.TrendingUp : Icons.Material.Rounded.TrendingDown)" Size="Size.Small" />
+                        @Format.Money(profit) kâr
+                    </div>
+                    <CostBar Purchase="_v.PurchasePrice" Expenses="_v.TotalExpenses" Price="sale.SalePrice" />
+                    <div class="kv-list mt-4">
+                        <div><span>Müşteri</span><b>@sale.CustomerName</b></div>
+                        <div><span>Telefon</span><b><a class="link" href="@($"tel:{sale.CustomerPhone}")">@sale.CustomerPhone</a></b></div>
+                        <div><span>Ödeme</span><b>@Labels.Text(sale.PaymentMethod)</b></div>
+                        @if (sale.Deposit > 0) { <div><span>Kapora</span><b>@Format.Money(sale.Deposit)</b></div> }
+                        @if (sale.SoldByName is not null) { <div><span>Satan</span><b>@sale.SoldByName</b></div> }
+                    </div>
+                    @if (sale.Notes is not null) { <p class="price-card-note">@sale.Notes</p> }
+                    <AuthorizeView Roles="GalleryOwner">
+                        <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" FullWidth="true" Class="mt-3" StartIcon="@Icons.Material.Rounded.Undo" OnClick="CancelSaleAsync">Satışı iptal et</MudButton>
+                    </AuthorizeView>
+                </section>
+            }
+            else
+            {
+                <section class="card price-card">
+                    <div class="price-card-label">Satış fiyatı</div>
+                    <div class="price-card-value">@Format.Money(_v.ListPrice)</div>
+                    <div class="@($"profit-badge {(margin >= 0 ? "up" : "down")}")">
+                        <MudIcon Icon="@(margin >= 0 ? Icons.Material.Rounded.TrendingUp : Icons.Material.Rounded.TrendingDown)" Size="Size.Small" />
+                        @Format.Money(margin) tahmini kâr
+                    </div>
+                    <CostBar Purchase="_v.PurchasePrice" Expenses="_v.TotalExpenses" Price="_v.ListPrice" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Large" FullWidth="true" Class="mt-5 sell-btn"
+                               StartIcon="@Icons.Material.Rounded.Sell" OnClick="SellAsync">Satışı kaydet</MudButton>
+                    <MudButton Variant="Variant.Outlined" FullWidth="true" Class="mt-2" Disabled="_busy" OnClick="ToggleReserveAsync"
+                               StartIcon="@(_v.Status == VehicleStatus.Reserved ? Icons.Material.Rounded.LockOpen : Icons.Material.Rounded.Lock)">
+                        @(_v.Status == VehicleStatus.Reserved ? "Rezervasyonu kaldır" : "Rezerve et")
+                    </MudButton>
+                </section>
+            }
+
+            <section class="card">
+                <h2 class="card-title mb-3">Alış bilgileri</h2>
+                <div class="kv-list">
+                    <div><span>Alış tarihi</span><b>@Format.Day(_v.PurchaseDate)</b></div>
+                    <div><span>Alış fiyatı</span><b>@Format.Money(_v.PurchasePrice)</b></div>
+                    <div><span>Masraflar</span><b>@Format.Money(_v.TotalExpenses)</b></div>
+                    <div class="kv-total"><span>Toplam maliyet</span><b>@Format.Money(_v.TotalCost)</b></div>
+                    <div><span>Satıcı</span><b>@(_v.SellerName ?? "—")</b></div>
+                    @if (_v.SellerPhone is not null) { <div><span>Satıcı telefonu</span><b><a class="link" href="@($"tel:{_v.SellerPhone}")">@_v.SellerPhone</a></b></div> }
+                </div>
+            </section>
+        </aside>
+    </div>
+}
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private VehicleDetail? _v;
+    private string? _error;
+    private int _photoIndex;
+    private bool _uploading;
+    private bool _busy;
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var result = await Api.GetVehicleAsync(Id);
+        _v = result.Data;
+        _error = result.Error;
+    }
+
+    private static IEnumerable<string> Split(string parts) =>
+        parts.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    private static string DueClass(DateTime due) => Format.DaysUntil(due) switch
+    {
+        < 0 => "overdue",
+        <= 7 => "soon",
+        _ => "later",
+    };
+
+    private void Step(int delta)
+    {
+        var count = _v!.Photos.Count;
+        _photoIndex = ((_photoIndex + delta) % count + count) % count;
+    }
+
+    private void Notify<T>(ApiResult<T> result, string success)
+    {
+        if (result.IsSuccess)
+            Snackbar.Add(success, Severity.Success);
+        else
+            Snackbar.Add(result.Error ?? "İşlem başarısız.", Severity.Error);
+    }
+
+    private async Task ToggleReserveAsync()
+    {
+        _busy = true;
+        var target = _v!.Status == VehicleStatus.Reserved ? VehicleStatus.InStock : VehicleStatus.Reserved;
+        var result = await Api.SetVehicleStatusAsync(Id, target);
+        Notify(result, target == VehicleStatus.Reserved ? "Araç rezerve edildi." : "Rezervasyon kaldırıldı.");
+        if (result.Data is { } updated) _v = updated;
+        _busy = false;
+    }
+
+    private async Task SellAsync()
+    {
+        if (await SaleDialog.OpenAsync(Dialogs, _v!) is { } sale)
+        {
+            Snackbar.Add($"Satış kaydedildi. Kâr: {Format.Money(sale.Profit)}", Severity.Success);
+            await LoadAsync();
+        }
+    }
+
+    private async Task CancelSaleAsync()
+    {
+        if (!await ConfirmDialog.AskAsync(Dialogs, "Satışı iptal et", "Satış kaydı silinecek ve araç tekrar stoka alınacak.", "Satışı iptal et"))
+            return;
+        Notify(await Api.CancelSaleAsync(_v!.Sale!.Id), "Satış iptal edildi, araç stoka alındı.");
+        await LoadAsync();
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (!await ConfirmDialog.AskAsync(Dialogs, "Aracı sil", $"{_v!.Title} ile birlikte fotoğrafları, masrafları ve hatırlatıcıları kalıcı olarak silinecek."))
+            return;
+        var result = await Api.DeleteVehicleAsync(Id);
+        Notify(result, "Araç silindi.");
+        if (result.IsSuccess)
+            Navigation.NavigateTo("/vehicles");
+    }
+
+    private async Task UploadAsync(IReadOnlyList<IBrowserFile>? files)
+    {
+        if (files is not { Count: > 0 })
+            return;
+
+        if (files.FirstOrDefault(f => f.Size > GalleryApi.MaxPhotoBytes) is { } tooBig)
+        {
+            Snackbar.Add($"{tooBig.Name} 8 MB'tan büyük.", Severity.Warning);
+            return;
+        }
+
+        _uploading = true;
+        var result = await Api.UploadPhotosAsync(Id, files);
+        _uploading = false;
+        Notify(result, files.Count == 1 ? "Fotoğraf yüklendi." : $"{files.Count} fotoğraf yüklendi.");
+        if (result.Data is { } photos) _v!.Photos = photos;
+    }
+
+    private async Task SetCoverAsync(PhotoResponse photo)
+    {
+        var result = await Api.SetCoverPhotoAsync(Id, photo.Id);
+        Notify(result, "Kapak fotoğrafı güncellendi.");
+        if (result.Data is { } photos) { _v!.Photos = photos; _photoIndex = 0; }
+    }
+
+    private async Task DeletePhotoAsync(PhotoResponse photo)
+    {
+        if (!await ConfirmDialog.AskAsync(Dialogs, "Fotoğrafı sil", "Bu fotoğraf kalıcı olarak silinecek."))
+            return;
+        var result = await Api.DeletePhotoAsync(Id, photo.Id);
+        Notify(result, "Fotoğraf silindi.");
+        if (result.Data is { } photos) { _v!.Photos = photos; _photoIndex = 0; }
+    }
+
+    private async Task AddExpenseAsync()
+    {
+        if (await ExpenseDialog.OpenAsync(Dialogs, null, Id, _v!.Title) is not null) { Snackbar.Add("Masraf eklendi.", Severity.Success); await LoadAsync(); }
+    }
+
+    private async Task EditExpenseAsync(ExpenseResponse expense)
+    {
+        if (await ExpenseDialog.OpenAsync(Dialogs, expense, Id, _v!.Title) is not null) { Snackbar.Add("Masraf güncellendi.", Severity.Success); await LoadAsync(); }
+    }
+
+    private async Task DeleteExpenseAsync(ExpenseResponse expense)
+    {
+        if (!await ConfirmDialog.AskAsync(Dialogs, "Masrafı sil", $"{Labels.Text(expense.Category)} — {Format.Money(expense.Amount)} silinecek."))
+            return;
+        Notify(await Api.DeleteExpenseAsync(expense.Id), "Masraf silindi.");
+        await LoadAsync();
+    }
+
+    private async Task AddReminderAsync()
+    {
+        if (await ReminderDialog.OpenAsync(Dialogs, null, Id, _v!.Title) is not null) { Snackbar.Add("Hatırlatıcı eklendi.", Severity.Success); await LoadAsync(); }
+    }
+
+    private async Task CompleteReminderAsync(ReminderResponse reminder)
+    {
+        Notify(await Api.CompleteReminderAsync(reminder.Id), $"{Labels.Text(reminder.Type)} tamamlandı.");
+        await LoadAsync();
+    }
+
+    private async Task DeleteReminderAsync(ReminderResponse reminder)
+    {
+        if (!await ConfirmDialog.AskAsync(Dialogs, "Hatırlatıcıyı sil", $"{Labels.Text(reminder.Type)} ({Format.Day(reminder.DueDate)}) silinecek."))
+            return;
+        Notify(await Api.DeleteReminderAsync(reminder.Id), "Hatırlatıcı silindi.");
+        await LoadAsync();
+    }
+}

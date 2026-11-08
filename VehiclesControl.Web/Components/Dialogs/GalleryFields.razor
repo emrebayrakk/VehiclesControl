@@ -1,0 +1,12 @@
+<MudGrid Spacing="3">
+    <MudItem xs="12"><MudTextField @bind-Value="Model.Name" Label="Galeri adı" Required="true" RequiredError="Galeri adı zorunludur." Variant="Variant.Outlined" MaxLength="150" /></MudItem>
+    <MudItem xs="12" sm="6"><MudTextField @bind-Value="Model.City" Label="Şehir" Variant="Variant.Outlined" MaxLength="80" /></MudItem>
+    <MudItem xs="12" sm="6"><MudTextField @bind-Value="Model.Phone" Label="Telefon" Variant="Variant.Outlined" InputType="InputType.Telephone" MaxLength="30" /></MudItem>
+    <MudItem xs="12" sm="6"><MudTextField @bind-Value="Model.Email" Label="E-posta" Variant="Variant.Outlined" InputType="InputType.Email" MaxLength="256" /></MudItem>
+    <MudItem xs="12" sm="6"><MudTextField @bind-Value="Model.TaxNumber" Label="Vergi numarası" Variant="Variant.Outlined" MaxLength="20" /></MudItem>
+    <MudItem xs="12"><MudTextField @bind-Value="Model.Address" Label="Adres" Variant="Variant.Outlined" Lines="2" Sizing="InputSizing.Auto" MaxLength="500" /></MudItem>
+</MudGrid>
+
+@code {
+    [Parameter, EditorRequired] public GalleryRequest Model { get; set; } = new();
+}

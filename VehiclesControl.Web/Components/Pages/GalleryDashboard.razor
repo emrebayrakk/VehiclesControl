@@ -1,0 +1,216 @@
+@inject GalleryApi Api
+
+<PageTitle>Panel · Vehicles Control</PageTitle>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mb-6">@_error</MudAlert>
+}
+
+<AuthorizeView Context="auth">
+    <section class="hero">
+        <div class="hero-main">
+            <div class="hero-eyebrow">@Today</div>
+            <h1 class="hero-title">Merhaba, @FirstName(auth.User.Identity?.Name)</h1>
+            @if (D is null)
+            {
+                <MudSkeleton Width="70%" Height="22px" Class="hero-skeleton" />
+            }
+            else
+            {
+                <p class="hero-text">
+                    Bu ay <b>@D.SalesThisMonth satış</b> ile <b>@Format.Money(D.RevenueThisMonth)</b> ciro yaptınız.
+                    Stokta <b>@(D.InStockCount + D.ReservedCount) araç</b> var@(D.UpcomingReminders.Count > 0 ? $", {D.UpcomingReminders.Count} iş yaklaşıyor" : "").
+                </p>
+            }
+            <div class="hero-actions">
+                <MudButton Variant="Variant.Filled" Class="btn-light" StartIcon="@Icons.Material.Rounded.Add" Href="/vehicles/new">Araç ekle</MudButton>
+                <MudButton Variant="Variant.Outlined" Class="btn-ghost-light" StartIcon="@Icons.Material.Rounded.Inventory2" Href="/vehicles">Stoku görüntüle</MudButton>
+                <MudIconButton Icon="@Icons.Material.Rounded.Refresh" Class="btn-ghost-light" OnClick="LoadAsync" Disabled="_loading" aria-label="Yenile" />
+            </div>
+        </div>
+        <div class="hero-side">
+            <div class="hero-metric">
+                <span>Potansiyel brüt kâr</span>
+                <b>@(D is null ? "—" : Format.Money(D.StockListValue - D.StockCost))</b>
+                <small>Stoktaki araçların ilan fiyatı − maliyet</small>
+            </div>
+            <div class="hero-metric-row">
+                <div class="hero-metric small">
+                    <span>Ort. stokta kalma</span>
+                    <b>@(D is null ? "—" : $"{D.AverageDaysInStock:0} gün")</b>
+                </div>
+                <div class="hero-metric small">
+                    <span>Müşteri</span>
+                    <b>@(D is null ? "—" : Format.Number(D.CustomerCount))</b>
+                </div>
+            </div>
+        </div>
+    </section>
+</AuthorizeView>
+
+<div class="kpi-grid">
+    <StatCard Label="Stoktaki araç" Value="@Format.Number(D?.InStockCount ?? 0)" Icon="@Icons.Material.Rounded.DirectionsCar"
+              Href="/vehicles" Loading="_loading" Hint="@(D is null ? null : $"{D.ReservedCount} rezerve")" />
+    <StatCard Label="Stok değeri" Value="@Format.Money(D?.StockListValue ?? 0)" Icon="@Icons.Material.Rounded.Inventory2" Accent="Color.Info"
+              Loading="_loading" Hint="@(D is null ? null : $"Maliyet {Format.Money(D.StockCost)}")" />
+    <StatCard Label="Bu ay ciro" Value="@Format.Money(D?.RevenueThisMonth ?? 0)" Icon="@Icons.Material.Rounded.Payments" Accent="Color.Secondary"
+              Href="/sales" Loading="_loading" Hint="@(D is null ? null : $"{D.SalesThisMonth} satış")" Trend="@D?.MonthlySales.Select(m => m.Revenue)" />
+    <StatCard Label="Bu ay kâr" Value="@Format.Money(D?.ProfitThisMonth ?? 0)" Icon="@Icons.Material.Rounded.TrendingUp" Accent="Color.Success"
+              Loading="_loading" Hint="@(D is null ? null : $"Masraf {Format.Money(D.ExpensesThisMonth)}")" Trend="@D?.MonthlySales.Select(m => m.Profit)" />
+</div>
+
+<div class="dash-grid">
+    <section class="card chart-card">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Satış performansı</h2>
+                <p class="card-sub">Son 6 ay · aylık ciro ve kâr</p>
+            </div>
+            <div class="chart-legend">
+                <span><i style="background:var(--mud-palette-primary)"></i>Ciro</span>
+                <span><i style="background:var(--mud-palette-success)"></i>Kâr</span>
+            </div>
+        </div>
+        @if (_loading)
+        {
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="250px" Class="rounded-lg" />
+        }
+        else
+        {
+            var max = Math.Max(1, D!.MonthlySales.Max(p => p.Revenue));
+            <div class="chart" role="img" aria-label="Son altı ayın aylık ciro ve kârı">
+                <div class="chart-axis">
+                    @foreach (var step in new[] { 1m, .75m, .5m, .25m, 0m })
+                    {
+                        <span>@Format.Compact(max * step)</span>
+                    }
+                </div>
+                <div class="chart-plot">
+                    <div class="chart-grid"><i></i><i></i><i></i><i></i><i></i></div>
+                    @foreach (var point in D.MonthlySales)
+                    {
+                        var current = point == D.MonthlySales[^1];
+                        <div class="@($"chart-col {(current ? "current" : "")}")">
+                            <MudTooltip Text="@($"{Format.MonthName(point.Year, point.Month)}: {point.Count} satış · ciro {Format.Money(point.Revenue)} · kâr {Format.Money(point.Profit)}")">
+                                <div class="chart-bars">
+                                    <span class="bar revenue" style="height:@Pct(point.Revenue, max)%"></span>
+                                    <span class="bar profit" style="height:@Pct(Math.Max(0, point.Profit), max)%"></span>
+                                </div>
+                            </MudTooltip>
+                            <div class="chart-label">@Format.MonthName(point.Year, point.Month)<small>@point.Count adet</small></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </section>
+
+    <section class="card">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Yaklaşan işler</h2>
+                <p class="card-sub">Önümüzdeki 30 gün</p>
+            </div>
+            <MudButton Variant="Variant.Text" Size="Size.Small" EndIcon="@Icons.Material.Rounded.ArrowForward" Href="/reminders">Tümü</MudButton>
+        </div>
+        @if (_loading)
+        {
+            @for (var i = 0; i < 4; i++) { <MudSkeleton Height="52px" Class="mb-1" /> }
+        }
+        else if (D!.UpcomingReminders.Count == 0)
+        {
+            <EmptyState Icon="@Icons.Material.Rounded.EventAvailable" Title="Her şey yolunda" Text="Muayene, sigorta veya bakım tarihi yaklaşan araç yok." />
+        }
+        else
+        {
+            <div class="timeline">
+                @foreach (var r in D.UpcomingReminders)
+                {
+                    <a class="timeline-item" href="@($"/vehicles/{r.VehicleId}")">
+                        <span class="@($"timeline-dot {DueClass(r.DueDate)}")"><MudIcon Icon="@Labels.Icon(r.Type)" Size="Size.Small" /></span>
+                        <span class="min-w-0 flex-grow-1">
+                            <span class="timeline-title text-truncate">@Labels.Text(r.Type) · @r.VehicleTitle</span>
+                            <span class="timeline-sub">@(r.Plate ?? "Plakasız") · @Format.Day(r.DueDate)</span>
+                        </span>
+                        <span class="@($"due-badge {DueClass(r.DueDate)}")">@Format.DueText(r.DueDate)</span>
+                    </a>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+<section class="card mt-5">
+    <div class="card-head">
+        <div>
+            <h2 class="card-title">Son satışlar</h2>
+            <p class="card-sub">En son kaydedilen 5 satış</p>
+        </div>
+        <MudButton Variant="Variant.Text" Size="Size.Small" EndIcon="@Icons.Material.Rounded.ArrowForward" Href="/sales">Tüm satışlar</MudButton>
+    </div>
+    @if (_loading)
+    {
+        @for (var i = 0; i < 4; i++) { <MudSkeleton Height="48px" Class="mb-1" /> }
+    }
+    else if (D!.RecentSales.Count == 0)
+    {
+        <EmptyState Icon="@Icons.Material.Rounded.Sell" Title="Henüz satış yok" Text="Satışı aracın sayfasından kaydedebilirsiniz." />
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="simple-table">
+                <thead>
+                    <tr><th>Araç</th><th>Müşteri</th><th>Tarih</th><th>Ödeme</th><th class="num">Satış</th><th class="num">Kâr</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in D.RecentSales)
+                    {
+                        <tr>
+                            <td><a class="cell-link" href="@($"/vehicles/{s.VehicleId}")">@s.VehicleTitle</a>@if (s.Plate is not null) { <span class="plate small ml-2">@s.Plate</span> }</td>
+                            <td>@s.CustomerName</td>
+                            <td class="muted">@Format.Day(s.SaleDate)</td>
+                            <td class="muted">@Labels.Text(s.PaymentMethod)</td>
+                            <td class="num strong">@Format.Money(s.SalePrice)</td>
+                            <td class="@($"num strong {(s.Profit >= 0 ? "text-profit" : "text-loss")}")">@(s.Profit >= 0 ? "+" : "")@Format.Money(s.Profit)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    private DashboardResponse? D;
+    private bool _loading = true;
+    private string? _error;
+
+    private static string Today => DateTime.Now.ToString("dddd, d MMMM yyyy", Format.Turkish);
+
+    private static string FirstName(string? name) => (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+
+    private static double Pct(decimal value, decimal max) => value <= 0 ? 0 : Math.Max(2, (double)(value / max) * 100);
+
+    private static string DueClass(DateTime due) => Format.DaysUntil(due) switch
+    {
+        < 0 => "overdue",
+        <= 7 => "soon",
+        _ => "later",
+    };
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        var result = await Api.GetDashboardAsync();
+        if (result.IsSuccess)
+            D = result.Data;
+        else
+            _error = result.Error;
+        _loading = D is null && _error is null;
+    }
+}

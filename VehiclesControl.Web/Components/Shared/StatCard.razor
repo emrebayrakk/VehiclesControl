@@ -1,0 +1,47 @@
+@inject NavigationManager Navigation
+
+<div class="@($"kpi {(Href is null ? "" : "is-link")}")" style="--accent: var(--mud-palette-@Accent.ToString().ToLowerInvariant())"
+     @onclick="Open" role="@(Href is null ? null : "link")">
+    <div class="kpi-head">
+        <div class="kpi-icon"><MudIcon Icon="@Icon" Size="Size.Small" /></div>
+        <div class="kpi-label">@Label</div>
+    </div>
+    @if (Loading)
+    {
+        <MudSkeleton Width="110px" Height="40px" />
+        <MudSkeleton Width="70%" Height="18px" />
+    }
+    else
+    {
+        <div class="kpi-value" title="@Value">@Value</div>
+        <div class="kpi-foot">
+            @if (Hint is not null)
+            {
+                <span class="kpi-hint">@Hint</span>
+            }
+            @if (Trend is not null)
+            {
+                <div class="kpi-trend"><Sparkline Values="Trend" /></div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public string Value { get; set; } = "0";
+    [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+    [Parameter] public Color Accent { get; set; } = Color.Primary;
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public string? Href { get; set; }
+    [Parameter] public bool Loading { get; set; }
+
+    /// <summary>Optional series for a small sparkline (e.g. the last six months).</summary>
+    [Parameter] public IEnumerable<decimal>? Trend { get; set; }
+
+    private void Open()
+    {
+        if (Href is not null)
+            Navigation.NavigateTo(Href);
+    }
+}

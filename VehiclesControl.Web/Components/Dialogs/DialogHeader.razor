@@ -1,0 +1,16 @@
+<div class="d-flex align-center gap-3">
+    <div class="dialog-icon"><MudIcon Icon="@Icon" /></div>
+    <div class="min-w-0">
+        <MudText Typo="Typo.h6">@Title</MudText>
+        @if (Subtitle is not null)
+        {
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">@Subtitle</MudText>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = Icons.Material.Rounded.Edit;
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+}

@@ -1,0 +1,77 @@
+@inject GalleryApi Api
+@inject NavigationManager Navigation
+
+@* MudMenu's own icon activator (wired by MudBlazor); the badge wraps the whole menu. *@
+<MudBadge Content="@_unread" Visible="@(_unread > 0)" Color="Color.Error" Overlap="true" Class="mr-1 notification-badge">
+<MudMenu Icon="@Icons.Material.Rounded.NotificationsNone" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+         AriaLabel="Bildirimler" OpenChanged="OnOpenChanged" PopoverClass="notification-popover">
+    <ChildContent>
+        <div class="notification-head">
+            <MudText Typo="Typo.subtitle2">Bildirimler</MudText>
+            @if (_unread > 0)
+            {
+                <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" OnClick="MarkAllAsync">Tümünü okundu say</MudButton>
+            }
+        </div>
+        <MudDivider />
+        @if (_items.Count == 0)
+        {
+            <div class="pa-6 text-center mud-text-secondary"><MudText Typo="Typo.body2">Bildirim yok.</MudText></div>
+        }
+        else
+        {
+            <div class="notification-list">
+                @foreach (var item in _items)
+                {
+                    <button type="button" class="@($"notification-item {(item.IsRead ? "" : "unread")}")" @onclick="() => OpenAsync(item)">
+                        <span class="notification-dot"></span>
+                        <span class="min-w-0">
+                            <span class="notification-title">@item.Title</span>
+                            <span class="notification-message">@item.Message</span>
+                            <span class="notification-time">@Format.DateTime(item.CreatedDate)</span>
+                        </span>
+                    </button>
+                }
+            </div>
+        }
+    </ChildContent>
+</MudMenu>
+</MudBadge>
+
+@code {
+    private List<NotificationResponse> _items = [];
+    private int _unread;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var result = await Api.GetNotificationsAsync();
+        if (result is { IsSuccess: true, Data: { } data })
+        {
+            _items = data.Items.ToList();
+            _unread = data.UnreadCount;
+        }
+    }
+
+    private async Task OnOpenChanged(bool open)
+    {
+        if (open)
+            await LoadAsync();
+    }
+
+    private async Task OpenAsync(NotificationResponse item)
+    {
+        if (!item.IsRead)
+            await Api.MarkNotificationReadAsync(item.Id);
+        await LoadAsync();
+        if (item.Link is { Length: > 0 } link && link.StartsWith('/'))
+            Navigation.NavigateTo(link);
+    }
+
+    private async Task MarkAllAsync()
+    {
+        await Api.MarkAllNotificationsReadAsync();
+        await LoadAsync();
+    }
+}

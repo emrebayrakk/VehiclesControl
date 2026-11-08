@@ -1,120 +1,104 @@
-using MassTransit;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using OpenTelemetry.Metrics;
 using Scalar.AspNetCore;
 using Serilog;
-using VehiclesControl.API.Middleware;
+using VehiclesControl.API;
+using VehiclesControl.API.ErrorHandling;
+using VehiclesControl.API.Filters;
+using VehiclesControl.API.OpenApi;
+using VehiclesControl.API.Startup;
 using VehiclesControl.Data.Context;
 using VehiclesControl.Infrastructure.Configurations;
+using VehiclesControl.Infrastructure.Storage;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddSerilog((services, logger) => logger
+    .ReadFrom.Configuration(builder.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext());
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddOpenApiDocument();
-builder.Services.AddScoped<ExceptionMiddleware>();
+// Data, application services, auth and storage register themselves through IServiceInstaller.
+builder.Services.InstallServices(builder.Configuration, builder.Environment, typeof(IServiceInstaller).Assembly);
 
-builder.Services.AddCors(options =>
+builder.Services.AddControllers(options => options.Filters.Add<ValidationFilter>())
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddOpenApi(options => options.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
+
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 {
-    options.AddPolicy("AllowAll",
-        builder => builder.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader());
-});
+    if (allowedOrigins.Length == 0)
+        policy.AllowAnyOrigin();
+    else
+        policy.WithOrigins(allowedOrigins);
+
+    policy.AllowAnyHeader().AllowAnyMethod();
+}));
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
+
+builder.Services.AddRateLimiter(options =>
 {
-    options.ForwardedHeaders =
-        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(RateLimitPolicies.Login, http => RateLimitPartition.GetFixedWindowLimiter(
+        http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
 });
 
-builder.Services.AddMassTransit(conf =>
-{
-    conf.UsingRabbitMq((ctx, cfg) =>
+builder.Services.AddHealthChecks().AddDbContextCheck<VehiclesControlContext>("database");
+
+builder.Services.AddOpenTelemetry().WithMetrics(metrics => metrics
+    .AddAspNetCoreInstrumentation()
+    .AddMeter("Microsoft.AspNetCore.Hosting", "Microsoft.AspNetCore.Server.Kestrel")
+    .AddView("http.server.request.duration", new ExplicitBucketHistogramConfiguration
     {
-        cfg.Host("localhost", "/", h =>
-        {
-            h.Username("myuser");
-            h.Password("mypass");
-        });
-    });
-});
-
-builder.Services.AddDbContext<VehiclesControlContext>(
-                       options =>
-                       {
-                           var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-                           if (!builder.Environment.IsDevelopment())
-                           {
-                               var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
-                               connectionString = string.Format(connectionString, password);
-                           }
-                           options.UseSqlServer(connectionString);
-                       });
-builder.Services 
-    .InstallServices(builder.Configuration,
-    typeof(IServiceInstaller).Assembly);
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .Enrich.FromLogContext()
-    .CreateLogger();
-
-builder.Services.AddOpenTelemetry()
-    .WithMetrics(x =>
-    {
-        x.AddPrometheusExporter();
-        x.AddMeter(
-            "Microsoft.AspNetCore.Hosting", 
-            "Microsoft.AspNetCore.Server.Kestrel");
-        x.AddView("request-duration",
-            new ExplicitBucketHistogramConfiguration
-            {
-                Boundaries = new[] { 0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.7 }
-            });
-    });
-
-builder.Host.UseSerilog();
-
-
+        Boundaries = [0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5],
+    })
+    .AddPrometheusExporter());
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.UseForwardedHeaders();
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+app.UseSerilogRequestLogging();
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseOpenApi(options =>
-    {
-        options.Path = "/openapi/{documentName}.json";
-    });
-    app.MapScalarApiReference();
+    app.MapOpenApi();
+    app.MapScalarApiReference(options => options.WithTitle("VehiclesControl Galeri API"));
 }
-app.Use(async (context, next) =>
-{
-    Log.Information("Handling request: {Method} {Url}", context.Request.Method, context.Request.Path);
-    await next.Invoke();
-    Log.Information("Finished handling request: {Method} {Url}", context.Request.Method, context.Request.Path);
-});
 
 app.UseHttpsRedirection();
-app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseForwardedHeaders();
+// Vehicle photos. File names are random GUIDs; listing the folder is not possible.
+var storage = app.Services.GetRequiredService<IOptions<FileStorageOptions>>().Value;
+Directory.CreateDirectory(storage.RootPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(storage.RootPath),
+    RequestPath = storage.RequestPath,
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "public,max-age=604800",
+});
 
+app.UseCors();
+app.UseRateLimiter();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<VehiclesControlContext>();
-    db.Database.Migrate();
-}
-
+app.MapHealthChecks("/health");
 app.MapPrometheusScrapingEndpoint();
 
-app.UseCors("AllowAll");
+await app.InitializeDatabaseAsync();
+await app.RunAsync();
 
-app.Run();
+/// <summary>Exposed for WebApplicationFactory-based tests.</summary>
+public partial class Program;

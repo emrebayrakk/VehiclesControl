@@ -1,27 +1,31 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="tr">
 
 <head>
-    
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
+    <ResourcePreloader />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <link rel="stylesheet" href="BlazorApp.Web.styles.css" />
-    <link rel="stylesheet" href="/loginPage.css" />
-    <link rel="stylesheet" href="/style.css" />
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
-    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-    <link href="https://use.fontawesome.com/releases/v5.14.0/css/all.css" rel="stylesheet">
-    <link href="_content/MudBlazor.Markdown/MudBlazor.Markdown.min.css" rel="stylesheet" />
-    <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <link href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" rel="stylesheet" />
+    <link href="@Assets["app.css"]" rel="stylesheet" />
+    <ImportMap />
+    <HeadOutlet @rendermode="RenderModeNoPrerender" />
 </head>
 
 <body>
-    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
-    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="_content/MudBlazor.Markdown/MudBlazor.Markdown.min.js"></script>
-    <script src="_framework/blazor.web.js"></script>
+    <Routes @rendermode="RenderModeNoPrerender" />
+    <script src="@Assets["_content/MudBlazor/MudBlazor.min.js"]"></script>
+    <script src="@Assets["app.js"]"></script>
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
 
 </html>
+
+@code {
+    // Prerendering is off: the session lives in browser storage, which is only reachable once the circuit is up.
+    private static readonly IComponentRenderMode RenderModeNoPrerender = new InteractiveServerRenderMode(prerender: false);
+}

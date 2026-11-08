@@ -1,0 +1,63 @@
+@page "/settings"
+@inject GalleryApi Api
+@inject ISnackbar Snackbar
+
+<PageTitle>Galeri ayarları · Vehicles Control</PageTitle>
+
+<AuthorizeView Roles="GalleryOwner" Context="roleCheck">
+    <Authorized>
+<PageHeader Eyebrow="Galeri" Title="Galeri ayarları" Subtitle="Galerinizin iletişim ve fatura bilgileri." />
+
+@if (_model is null)
+{
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="320px" Class="rounded-lg" />
+}
+else
+{
+    <MudPaper Outlined="true" Class="panel" Style="max-width:880px">
+        <MudForm @ref="_form">
+            <GalleryFields Model="_model" />
+        </MudForm>
+        @if (_error is not null) { <MudAlert Severity="Severity.Error" Variant="Variant.Text" Dense="true" Class="mt-4">@_error</MudAlert> }
+        <div class="d-flex justify-end mt-6">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SaveAsync" Disabled="_saving">@(_saving ? "Kaydediliyor…" : "Kaydet")</MudButton>
+        </div>
+    </MudPaper>
+}
+    </Authorized>
+    <NotAuthorized>
+        <MudPaper Outlined="true" Class="mt-8">
+            <EmptyState Icon="@Icons.Material.Rounded.Lock" Title="Erişim yok" Text="Bu sayfa yalnızca galeri sahibine açıktır." />
+        </MudPaper>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private MudForm _form = default!;
+    private GalleryRequest? _model;
+    private bool _saving;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Api.GetMyGalleryAsync();
+        if (result.Data is { } g)
+            _model = new GalleryRequest { Name = g.Name, City = g.City, Phone = g.Phone, Email = g.Email, Address = g.Address, TaxNumber = g.TaxNumber };
+        else
+            _error = result.Error;
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        var result = await Api.UpdateMyGalleryAsync(_model!);
+        _saving = false;
+        _error = result.Error;
+        if (result.IsSuccess)
+            Snackbar.Add("Galeri bilgileri kaydedildi.", Severity.Success);
+    }
+}

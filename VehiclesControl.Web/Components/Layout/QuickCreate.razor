@@ -1,0 +1,36 @@
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+@* MudMenu's own button activator: MudBlazor wires the click itself. *@
+<MudMenu Label="Yeni" StartIcon="@Icons.Material.Rounded.Add" EndIcon="@Icons.Material.Rounded.ExpandMore" Variant="Variant.Filled" Color="Color.Primary"
+         Size="Size.Small" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="quick-create mr-1"
+         PopoverClass="menu-popover" AriaLabel="Yeni kayıt">
+    <MudMenuItem Icon="@Icons.Material.Rounded.DirectionsCar" OnClick="@(() => Navigation.NavigateTo("/vehicles/new"))">Araç</MudMenuItem>
+    <MudMenuItem Icon="@Icons.Material.Rounded.PersonAdd" OnClick="NewCustomerAsync">Müşteri</MudMenuItem>
+    <MudMenuItem Icon="@Icons.Material.Rounded.ReceiptLong" OnClick="NewExpenseAsync">Masraf</MudMenuItem>
+    <MudMenuItem Icon="@Icons.Material.Rounded.EventNote" OnClick="NewReminderAsync">Hatırlatıcı</MudMenuItem>
+</MudMenu>
+
+@code {
+    private async Task NewCustomerAsync()
+    {
+        if (await CustomerDialog.OpenAsync(Dialogs) is { } customer)
+            Snackbar.Add($"{customer.FullName} eklendi.", Severity.Success);
+    }
+
+    private async Task NewExpenseAsync()
+    {
+        if (await ExpenseDialog.OpenAsync(Dialogs) is not null)
+            Snackbar.Add("Masraf eklendi.", Severity.Success);
+    }
+
+    private async Task NewReminderAsync()
+    {
+        if (await ReminderDialog.OpenAsync(Dialogs) is { } reminder)
+        {
+            Snackbar.Add("Hatırlatıcı eklendi.", Severity.Success);
+            Navigation.NavigateTo($"/vehicles/{reminder.VehicleId}");
+        }
+    }
+}

@@ -1,0 +1,90 @@
+@inject GalleryApi Api
+
+<MudDialog>
+    <TitleContent>
+        <DialogHeader Icon="@Icons.Material.Rounded.EventNote" Title="@(Reminder is null ? "Yeni hatırlatıcı" : "Hatırlatıcıyı düzenle")" Subtitle="@FixedVehicleTitle" />
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudGrid Spacing="3" Class="pt-2">
+                @if (FixedVehicleId is null)
+                {
+                    <MudItem xs="12"><VehiclePicker @bind-Value="_vehicle" Required="true" /></MudItem>
+                }
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="ReminderType" @bind-Value="_model.Type" Label="Tür" Variant="Variant.Outlined">
+                        @foreach (var type in Enum.GetValues<ReminderType>())
+                        {
+                            <MudSelectItem Value="type">@Labels.Text(type)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="_model.DueDate" Label="Son tarih" Variant="Variant.Outlined" Culture="Format.Turkish" DateFormat="dd.MM.yyyy" Required="true" RequiredError="Tarih seçin." />
+                </MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="_model.Notes" Label="Not" Variant="Variant.Outlined" MaxLength="500" /></MudItem>
+            </MudGrid>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary mt-2 d-block">Son tarihten 14 gün önce panelde bildirim oluşturulur.</MudText>
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Text" Dense="true" Class="mt-3">@_error</MudAlert>
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()" Disabled="_saving">Vazgeç</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="_saving">@(_saving ? "Kaydediliyor…" : "Kaydet")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public ReminderResponse? Reminder { get; set; }
+    [Parameter] public long? FixedVehicleId { get; set; }
+    [Parameter] public string? FixedVehicleTitle { get; set; }
+
+    private MudForm _form = default!;
+    private ReminderRequest _model = new() { DueDate = DateTime.Today.AddMonths(1) };
+    private VehicleOption? _vehicle;
+    private bool _saving;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        if (Reminder is { } r)
+        {
+            _model = new ReminderRequest { VehicleId = r.VehicleId, Type = r.Type, DueDate = r.DueDate, Notes = r.Notes };
+            if (FixedVehicleId is null)
+                _vehicle = new VehicleOption(r.VehicleId, r.VehicleTitle, r.Plate, VehicleStatus.InStock, 0);
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        _model.VehicleId = FixedVehicleId ?? _vehicle?.Id ?? 0;
+        _saving = true;
+        _error = null;
+        var result = Reminder is null ? await Api.CreateReminderAsync(_model) : await Api.UpdateReminderAsync(Reminder.Id, _model);
+        _saving = false;
+
+        if (result is { IsSuccess: true, Data: { } saved })
+            MudDialog.Close(DialogResult.Ok(saved));
+        else
+            _error = result.Error;
+    }
+
+    public static async Task<ReminderResponse?> OpenAsync(IDialogService dialogs, ReminderResponse? reminder = null, long? vehicleId = null, string? vehicleTitle = null)
+    {
+        var dialog = await dialogs.ShowAsync<ReminderDialog>("Hatırlatıcı", new DialogParameters<ReminderDialog>
+        {
+            { x => x.Reminder, reminder },
+            { x => x.FixedVehicleId, vehicleId },
+            { x => x.FixedVehicleTitle, vehicleTitle },
+        });
+        return (await dialog.Result) is { Canceled: false, Data: ReminderResponse saved } ? saved : null;
+    }
+}

@@ -1,0 +1,92 @@
+@page "/team"
+@inject GalleryApi Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<AuthorizeView Roles="GalleryOwner" Context="roleCheck">
+    <Authorized>
+<PageTitle>Ekip · Vehicles Control</PageTitle>
+
+<PageHeader Eyebrow="Galeri" Title="Ekip" Subtitle="Galerinizde çalışan ve panele erişen kişiler.">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.PersonAdd" OnClick="AddAsync">Kişi ekle</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Outlined="true" Class="overflow-hidden">
+    <MudDataGrid T="UserResponse" Items="_members" Loading="_loading" Hover="true" Elevation="0" Class="vc-grid" SortMode="SortMode.None">
+        <Columns>
+            <TemplateColumn Title="Kişi">
+                <CellTemplate>
+                    <div class="d-flex align-center gap-3">
+                        <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">@Format.Initials($"{context.Item.FirstName} {context.Item.LastName}")</MudAvatar>
+                        <div>
+                            <div class="recent-title">@context.Item.FirstName @context.Item.LastName</div>
+                            <div class="recent-sub">@context.Item.Email</div>
+                        </div>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Rol">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@(context.Item.Role == UserRole.GalleryOwner ? Color.Primary : Color.Default)">@Labels.Text(context.Item.Role)</MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Telefon"><CellTemplate>@(context.Item.Phone ?? "—")</CellTemplate></TemplateColumn>
+            <TemplateColumn Title="Son giriş"><CellTemplate><span class="mud-text-secondary">@(Format.DateTime(context.Item.LastLoginAt) ?? "Hiç giriş yapmadı")</span></CellTemplate></TemplateColumn>
+            <TemplateColumn Title="Durum">
+                <CellTemplate>
+                    <MudSwitch T="bool" Value="context.Item.IsActive" ValueChanged="v => ToggleAsync(context.Item, v)" Color="Color.Success"
+                               Label="@(context.Item.IsActive ? "Aktif" : "Pasif")" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+</MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudPaper Outlined="true" Class="mt-8">
+            <EmptyState Icon="@Icons.Material.Rounded.Lock" Title="Erişim yok" Text="Bu sayfa yalnızca galeri sahibine açıktır." />
+        </MudPaper>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<UserResponse> _members = [];
+    private bool _loading = true;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await Api.GetTeamAsync();
+        _members = result.Data ?? [];
+        if (!result.IsSuccess)
+            Snackbar.Add(result.Error ?? "Ekip yüklenemedi.", Severity.Error);
+        _loading = false;
+    }
+
+    private async Task AddAsync()
+    {
+        if (await TeamMemberDialog.OpenAsync(Dialogs) is { } member)
+        {
+            Snackbar.Add($"{member.FirstName} ekibe eklendi.", Severity.Success);
+            await LoadAsync();
+        }
+    }
+
+    private async Task ToggleAsync(UserResponse member, bool active)
+    {
+        var result = await Api.SetMemberActiveAsync(member.Id, active);
+        if (result.IsSuccess)
+        {
+            member.IsActive = active;
+            Snackbar.Add(active ? "Hesap aktifleştirildi." : "Hesap pasif yapıldı; bu kişi artık giriş yapamaz.", Severity.Info);
+        }
+        else
+        {
+            Snackbar.Add(result.Error ?? "Güncellenemedi.", Severity.Error);
+        }
+    }
+}

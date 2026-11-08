@@ -1,0 +1,12 @@
+<MudNumericField T="decimal" Value="Value" ValueChanged="ValueChanged" Label="@Label" Variant="Variant.Outlined" Min="0"
+                 Format="N0" Culture="Format.Turkish" HideSpinButtons="true" Required="Required" HelperText="@HelperText"
+                 Adornment="Adornment.End" AdornmentText="₺" Disabled="Disabled" />
+
+@code {
+    [Parameter] public decimal Value { get; set; }
+    [Parameter] public EventCallback<decimal> ValueChanged { get; set; }
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? HelperText { get; set; }
+}

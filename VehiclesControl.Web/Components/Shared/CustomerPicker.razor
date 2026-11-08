@@ -1,0 +1,26 @@
+@inject GalleryApi Api
+
+<MudAutocomplete T="CustomerResponse" Value="Value" ValueChanged="ValueChanged" SearchFunc="SearchAsync" ToStringFunc="Describe"
+                 Label="Müşteri" Variant="Variant.Outlined" Required="true" RequiredError="Müşteri seçin." Clearable="true"
+                 ResetValueOnEmptyText="true" DebounceInterval="250" MinCharacters="0"
+                 Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Person">
+    <ItemTemplate Context="customer">
+        <div>
+            <div>@customer.FullName</div>
+            <div class="recent-sub">@customer.Phone@(customer.City is null ? "" : $" · {customer.City}")</div>
+        </div>
+    </ItemTemplate>
+</MudAutocomplete>
+
+@code {
+    [Parameter] public CustomerResponse? Value { get; set; }
+    [Parameter] public EventCallback<CustomerResponse?> ValueChanged { get; set; }
+
+    private static string Describe(CustomerResponse? c) => c is null ? string.Empty : $"{c.FullName} · {c.Phone}";
+
+    private async Task<IEnumerable<CustomerResponse>> SearchAsync(string? text, CancellationToken ct)
+    {
+        var result = await Api.GetCustomersAsync(new PagedQuery { Search = text, PageSize = 20, SortBy = "name", Descending = false }, ct);
+        return result.Data?.Items ?? [];
+    }
+}

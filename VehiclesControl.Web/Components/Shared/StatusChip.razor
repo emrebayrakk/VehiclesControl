@@ -1,0 +1,5 @@
+<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@Labels.Color(Status)" Class="status-chip">@Labels.Text(Status)</MudChip>
+
+@code {
+    [Parameter] public VehicleStatus Status { get; set; }
+}

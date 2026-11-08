@@ -1,0 +1,291 @@
+@page "/vehicles"
+@inject GalleryApi Api
+@inject NavigationManager Navigation
+
+<PageTitle>Araçlar · Vehicles Control</PageTitle>
+
+<PageHeader Eyebrow="Stok" Title="Araçlar" Subtitle="Galerinizdeki araçlar, maliyetleri ve durumları.">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Add" Href="/vehicles/new">Araç ekle</MudButton>
+    </Actions>
+</PageHeader>
+
+<div class="toolbar">
+    <MudTextField T="string" Value="_search" ValueChanged="SearchChanged" Immediate="true" DebounceInterval="300"
+                  Placeholder="Marka, model, plaka veya şasi ara…" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search"
+                  Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Class="toolbar-search" />
+    <div class="segmented" role="tablist" aria-label="Durum filtresi">
+        @foreach (var (value, label) in StatusFilters)
+        {
+            <button type="button" role="tab" aria-selected="@(_status == value)" class="@(_status == value ? "active" : null)" @onclick="() => StatusChanged(value)">
+                @label
+            </button>
+        }
+    </div>
+    <MudSpacer />
+    <MudSelect T="string" Value="_sort" ValueChanged="SortChanged" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true"
+               Class="toolbar-sort" AdornmentIcon="@Icons.Material.Rounded.SwapVert" aria-label="Sıralama">
+        <MudSelectItem Value="@("recent")">En yeni giriş</MudSelectItem>
+        <MudSelectItem Value="@("purchasedate")">En uzun bekleyen</MudSelectItem>
+        <MudSelectItem Value="@("price-desc")">Fiyat: yüksek → düşük</MudSelectItem>
+        <MudSelectItem Value="@("price-asc")">Fiyat: düşük → yüksek</MudSelectItem>
+        <MudSelectItem Value="@("year-desc")">Model yılı: yeni</MudSelectItem>
+        <MudSelectItem Value="@("km-asc")">Kilometre: az</MudSelectItem>
+        <MudSelectItem Value="@("brand")">Marka: A-Z</MudSelectItem>
+    </MudSelect>
+    <div class="segmented icons" aria-label="Görünüm">
+        <MudTooltip Text="Kart görünümü">
+            <button type="button" class="@(_view == "cards" ? "active" : null)" aria-label="Kart görünümü" @onclick="@(() => SetView("cards"))">
+                <MudIcon Icon="@Icons.Material.Rounded.GridView" Size="Size.Small" />
+            </button>
+        </MudTooltip>
+        <MudTooltip Text="Tablo görünümü">
+            <button type="button" class="@(_view == "table" ? "active" : null)" aria-label="Tablo görünümü" @onclick="@(() => SetView("table"))">
+                <MudIcon Icon="@Icons.Material.Rounded.TableRows" Size="Size.Small" />
+            </button>
+        </MudTooltip>
+    </div>
+</div>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mb-4">@_error</MudAlert>
+}
+
+@if (_view == "cards")
+{
+    <div class="result-meta">
+        @if (_page is not null) { <span><b>@Format.Number(_page.TotalCount)</b> araç</span> }
+    </div>
+
+    @if (_loading && _page is null)
+    {
+        <div class="vehicle-grid">
+            @for (var i = 0; i < 8; i++)
+            {
+                <div class="vehicle-card skeleton"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Class="vehicle-card-media" /><div class="pa-4"><MudSkeleton Width="70%" /><MudSkeleton Width="40%" /><MudSkeleton Width="55%" Height="32px" /></div></div>
+            }
+        </div>
+    }
+    else if (_page is { TotalCount: 0 })
+    {
+        <div class="card"><EmptyState Icon="@Icons.Material.Rounded.DirectionsCar" Title="Araç bulunamadı" Text="Filtreleri değiştirin veya yeni bir araç ekleyin.">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/vehicles/new" StartIcon="@Icons.Material.Rounded.Add">Araç ekle</MudButton>
+        </EmptyState></div>
+    }
+    else if (_page is not null)
+    {
+        <div class="@($"vehicle-grid {(_loading ? "is-loading" : "")}")">
+            @foreach (var v in _page.Items)
+            {
+                var margin = v.ListPrice - v.TotalCost;
+                <a class="vehicle-card" href="@($"/vehicles/{v.Id}")">
+                    <div class="vehicle-card-media">
+                        @if (Format.Media(v.CoverPhotoUrl) is { } src)
+                        {
+                            <img src="@src" alt="@($"{v.Brand} {v.Model}")" loading="lazy" />
+                        }
+                        else
+                        {
+                            <div class="media-placeholder">
+                                <MudIcon Icon="@Icons.Material.Rounded.DirectionsCar" />
+                                <span lang="en">@v.Brand</span>
+                            </div>
+                        }
+                        <span class="@($"status-pill {v.Status.ToString().ToLowerInvariant()}")">@Labels.Text(v.Status)</span>
+                        @if (v.Status != VehicleStatus.Sold)
+                        {
+                            <span class="age-pill">@Format.DaysSince(v.PurchaseDate) gün</span>
+                        }
+                    </div>
+                    <div class="vehicle-card-body">
+                        <div class="vehicle-card-title">
+                            <span class="text-truncate">@v.Brand @v.Model</span>
+                            <span class="year">@v.Year</span>
+                        </div>
+                        <div class="vehicle-card-trim text-truncate">@(v.Trim ?? "—")</div>
+                        <div class="spec-chips">
+                            <span><MudIcon Icon="@Icons.Material.Rounded.Speed" Size="Size.Small" />@Format.Km(v.Kilometers)</span>
+                            <span><MudIcon Icon="@Icons.Material.Rounded.LocalGasStation" Size="Size.Small" />@Labels.Text(v.FuelType)</span>
+                            <span><MudIcon Icon="@Icons.Material.Rounded.Settings" Size="Size.Small" />@Labels.Text(v.Transmission)</span>
+                        </div>
+                        <div class="vehicle-card-foot">
+                            <div>
+                                <div class="price">@Format.Money(v.ListPrice)</div>
+                                <div class="@($"margin {(margin >= 0 ? "text-profit" : "text-loss")}")">@(margin >= 0 ? "+" : "")@Format.Money(margin) marj</div>
+                            </div>
+                            @if (v.Plate is not null) { <span class="plate">@v.Plate</span> }
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+
+        @if (PageCount > 1)
+        {
+            <div class="d-flex justify-center mt-6">
+                <MudPagination Count="PageCount" Selected="_pageIndex" SelectedChanged="PageChanged" ShowFirstButton="true" ShowLastButton="true" Size="Size.Small" />
+            </div>
+        }
+    }
+}
+else
+{
+    <div class="card no-pad">
+        <MudDataGrid @ref="_grid" T="VehicleListItem" ServerData="LoadGridAsync" Hover="true" Elevation="0" Class="vc-grid clickable-rows"
+                     SortMode="SortMode.None" RowsPerPage="20" RowClick="@(e => Navigation.NavigateTo($"/vehicles/{e.Item.Id}"))">
+            <Columns>
+                <TemplateColumn Title="Araç">
+                    <CellTemplate>
+                        <div class="d-flex align-center gap-3">
+                            <VehicleThumb Url="@context.Item.CoverPhotoUrl" />
+                            <div class="min-w-0">
+                                <div class="cell-title">@context.Item.Brand @context.Item.Model</div>
+                                <div class="cell-sub text-truncate">@(context.Item.Trim ?? "—")</div>
+                            </div>
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Plaka">
+                    <CellTemplate>
+                        @if (context.Item.Plate is { } plate) { <span class="plate">@plate</span> } else { <span class="muted">—</span> }
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Yıl / Km">
+                    <CellTemplate><div class="tabular">@context.Item.Year</div><div class="cell-sub tabular">@Format.Km(context.Item.Kilometers)</div></CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Yakıt / Vites">
+                    <CellTemplate><div>@Labels.Text(context.Item.FuelType)</div><div class="cell-sub">@Labels.Text(context.Item.Transmission)</div></CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Maliyet" HeaderClass="text-right" CellClass="text-right">
+                    <CellTemplate>
+                        <div class="tabular">@Format.Money(context.Item.TotalCost)</div>
+                        @if (context.Item.TotalExpenses > 0) { <div class="cell-sub tabular">+@Format.Money(context.Item.TotalExpenses) masraf</div> }
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Satış fiyatı" HeaderClass="text-right" CellClass="text-right">
+                    <CellTemplate>
+                        <div class="cell-title tabular">@Format.Money(context.Item.ListPrice)</div>
+                        <div class="@($"cell-sub tabular {(context.Item.ListPrice >= context.Item.TotalCost ? "text-profit" : "text-loss")}")">@Format.Money(context.Item.ListPrice - context.Item.TotalCost) marj</div>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Durum">
+                    <CellTemplate>
+                        <span class="@($"status-pill inline {context.Item.Status.ToString().ToLowerInvariant()}")">@Labels.Text(context.Item.Status)</span>
+                        @if (context.Item.Status != VehicleStatus.Sold) { <div class="cell-sub">@Format.DaysSince(context.Item.PurchaseDate) gündür stokta</div> }
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <NoRecordsContent>
+                <EmptyState Icon="@Icons.Material.Rounded.DirectionsCar" Title="Araç bulunamadı" Text="Filtreleri değiştirin veya yeni bir araç ekleyin." />
+            </NoRecordsContent>
+            <PagerContent>
+                <MudDataGridPager T="VehicleListItem" PageSizeOptions="[10, 20, 50]" RowsPerPageString="Sayfa başına" InfoFormat="{first_item}–{last_item} / {all_items}" />
+            </PagerContent>
+        </MudDataGrid>
+    </div>
+}
+
+@code {
+    private const int CardPageSize = 12;
+
+    private static readonly (string Value, string Label)[] StatusFilters =
+    [
+        ("all", "Tümü"),
+        (nameof(VehicleStatus.InStock), "Stokta"),
+        (nameof(VehicleStatus.Reserved), "Rezerve"),
+        (nameof(VehicleStatus.Sold), "Satıldı"),
+    ];
+
+    private MudDataGrid<VehicleListItem>? _grid;
+    private PagedResult<VehicleListItem>? _page;
+    private string _view = "cards";
+    private int _pageIndex = 1;
+    private bool _loading = true;
+    private string? _search;
+    private string _status = "all";
+    private string _sort = "recent";
+    private string? _error;
+
+    [SupplyParameterFromQuery(Name = "sort")] public string? SortQuery { get; set; }
+
+    private int PageCount => _page is null ? 0 : (int)Math.Ceiling(_page.TotalCount / (double)CardPageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (SortQuery is { Length: > 0 })
+            _sort = SortQuery;
+        await LoadCardsAsync();
+    }
+
+    private VehicleQuery Query(int page, int pageSize)
+    {
+        var (sortBy, descending) = _sort switch
+        {
+            "purchasedate" => ("purchasedate", false),
+            "price-desc" => ("listprice", true),
+            "price-asc" => ("listprice", false),
+            "year-desc" => ("year", true),
+            "km-asc" => ("kilometers", false),
+            "brand" => ("brand", false),
+            _ => ((string?)null, true),
+        };
+
+        return new VehicleQuery
+        {
+            Search = _search,
+            Status = Enum.TryParse<VehicleStatus>(_status, out var status) ? status : null,
+            Page = page,
+            PageSize = pageSize,
+            SortBy = sortBy,
+            Descending = descending,
+        };
+    }
+
+    private async Task LoadCardsAsync()
+    {
+        _loading = true;
+        var result = await Api.GetVehiclesAsync(Query(_pageIndex, CardPageSize));
+        _error = result.Error;
+        if (result.Data is { } page)
+            _page = page;
+        _loading = false;
+    }
+
+    private async Task<GridData<VehicleListItem>> LoadGridAsync(GridState<VehicleListItem> state, CancellationToken ct)
+    {
+        var result = await Api.GetVehiclesAsync(Query(state.Page + 1, state.PageSize));
+        _error = result.Error;
+        return result.Data is { } page
+            ? new GridData<VehicleListItem> { Items = page.Items, TotalItems = page.TotalCount }
+            : new GridData<VehicleListItem> { Items = [], TotalItems = 0 };
+    }
+
+    private Task ReloadAsync()
+    {
+        _pageIndex = 1;
+        return _view == "cards" ? LoadCardsAsync() : _grid?.ReloadServerData() ?? Task.CompletedTask;
+    }
+
+    private Task SearchChanged(string? value) { _search = value; return ReloadAsync(); }
+    private Task StatusChanged(string value) { _status = value; return ReloadAsync(); }
+    private Task SortChanged(string value) { _sort = value; return ReloadAsync(); }
+
+    private async Task PageChanged(int page)
+    {
+        _pageIndex = page;
+        await LoadCardsAsync();
+    }
+
+    private async Task SetView(string view)
+    {
+        if (_view == view)
+            return;
+        _view = view;
+        if (view == "cards")
+        {
+            _pageIndex = 1;
+            await LoadCardsAsync();
+        }
+    }
+}

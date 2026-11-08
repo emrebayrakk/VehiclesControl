@@ -1,45 +1,49 @@
-﻿using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using VehiclesControl.Application.Abstractions;
+using VehiclesControl.Application.Authorization;
 using VehiclesControl.Domain.Entities;
-using VehiclesControl.Domain.Interfaces.EntityFramework;
 
-namespace VehiclesControl.Application.Authentication
+namespace VehiclesControl.Application.Authentication;
+
+public sealed class JwtProvider(IOptions<JwtOptions> options, TimeProvider clock) : IJwtProvider
 {
-    public sealed class JwtProvider : IJwtProvider
+    private readonly JwtOptions _options = options.Value;
+
+    public (string Token, DateTime ExpiresAt) CreateToken(User user)
     {
-        private readonly JwtOptions _jwtOptions;
+        var now = clock.GetUtcNow().UtcDateTime;
+        var expires = now.AddMinutes(_options.ExpiryMinutes);
 
-        public JwtProvider(IOptions<JwtOptions> jwtOptions)
+        var claims = new List<Claim>
         {
-            _jwtOptions = jwtOptions.Value;
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Name, user.FullName),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new(AppClaims.Role, user.Role.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+        };
+
+        if (user.GalleryId is { } galleryId)
+        {
+            claims.Add(new Claim(AppClaims.GalleryId, galleryId.ToString()));
+            if (user.Gallery is not null)
+                claims.Add(new Claim(AppClaims.GalleryName, user.Gallery.Name));
         }
 
-        public string CreateToken(Domain.Entities.User user)
-        {
-            var claims = new Claim[]{
-                new Claim(ClaimTypes.Name,$"{user.FirstName} {user.LastName}"),
-                new Claim(JwtRegisteredClaimNames.Sub, user.FirstName),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(ClaimTypes.Authentication, ""+user.Id+""),
-            };
+        var token = new JwtSecurityToken(
+            issuer: _options.Issuer,
+            audience: _options.Audience,
+            claims: claims,
+            notBefore: now,
+            expires: expires,
+            signingCredentials: new SigningCredentials(
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey)),
+                SecurityAlgorithms.HmacSha256));
 
-            DateTime expires = DateTime.Now.AddDays(1);
-            JwtSecurityToken jwtSecurityToken = new(
-                issuer: _jwtOptions.Issuer,
-                audience: _jwtOptions.Audience,
-                claims: claims,
-                notBefore: DateTime.Now,
-                expires: expires,
-                signingCredentials: new SigningCredentials(
-                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SecretKey)), SecurityAlgorithms.HmacSha256));
-
-            string token = new JwtSecurityTokenHandler()
-                .WriteToken(jwtSecurityToken);
-
-            return token;
-        }
+        return (new JwtSecurityTokenHandler().WriteToken(token), expires);
     }
 }
